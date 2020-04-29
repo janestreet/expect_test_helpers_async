@@ -105,8 +105,3 @@ val require_does_raise_async
   -> Source_code_position.t
   -> (unit -> _ Deferred.t)
   -> unit Deferred.t
-
-(** We export [Expect_test_config] so that the [%expect] syntax uses Async, to prevent a
-    confusing situation in which one is using [Expect_test_helpers_async] functions, which
-    expect Async to be running, but Async isn't running. *)
-module Expect_test_config = Async.Expect_test_config

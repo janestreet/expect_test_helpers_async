@@ -183,5 +183,3 @@ let require_does_raise_async
   require_does_raise ~cr ~hide_positions ?show_backtrace here (fun () ->
     Result.ok_exn result)
 ;;
-
-module Expect_test_config = Async.Expect_test_config
