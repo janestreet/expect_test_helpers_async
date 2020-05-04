@@ -2,6 +2,8 @@ open! Core
 open! Async
 open! Import
 
+let raises_exe = "bin/raises.exe"
+
 let%expect_test "[~hide_positions:true] with a [Time.t]" =
   print_s ~hide_positions:true [%message (Time.epoch : Time.t)];
   [%expect {|
@@ -108,7 +110,7 @@ let%expect_test "[run ~hide_positions:true]" =
     run ~hide_positions:true "echo" [ [%message [%here]] |> Sexp.to_string ]
   in
   [%expect {|
-    lib/expect_test_helpers/async/test/src/test_helpers.ml:LINE:COL |}]
+    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}]
 ;;
 
 let%expect_test "run, with postprocess" =
@@ -121,7 +123,7 @@ let%expect_test "run, with postprocess" =
       [ [%message [%here]] |> Sexp.to_string ]
   in
   [%expect {|
-    lib/expect_foo_helpers/async/foo/src/foo_helpers.ml:LINE:COL |}]
+    lib/expect_foo_helpers/async/foo/foo_helpers.ml:LINE:COL |}]
 ;;
 
 let%expect_test "system" =
@@ -198,11 +200,11 @@ let%expect_test "[system ~hide_positions:true]" =
   [%expect
     {|
     --- STDERR ---
-    lib/expect_test_helpers/async/test/src/test_helpers.ml:LINE:COL |}]
+    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}]
 ;;
 
 let%expect_test "system, without backtraces" =
-  let%bind () = system ~enable_ocaml_backtraces:false "../bin/raises.exe" in
+  let%bind () = system ~enable_ocaml_backtraces:false raises_exe in
   [%expect
     {|
     ("Unclean exit" (Exit_non_zero 2))
@@ -214,7 +216,7 @@ let%expect_test "system, without backtraces" =
 
 
 let%expect_test "run, without backtraces" =
-  let%bind () = run ~enable_ocaml_backtraces:false "../bin/raises.exe" [] in
+  let%bind () = run ~enable_ocaml_backtraces:false raises_exe [] in
   [%expect
     {|
     ("Unclean exit" (Exit_non_zero 2))
@@ -238,7 +240,7 @@ let%expect_test "[show_raise_async], raises hiding positions" =
   in
   [%expect
     {|
-    (raised lib/expect_test_helpers/async/test/src/test_helpers.ml:LINE:COL) |}]
+    (raised lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL) |}]
 ;;
 
 let%expect_test "[show_raise_async] with a deep stack" =
@@ -287,7 +289,7 @@ let%expect_test "[require_does_not_raise_async], raises" =
   let%bind () =
     [%expect
       {|
-    (* require-failed: lib/expect_test_helpers/async/test/src/test_helpers.ml:LINE:COL. *)
+    (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
     ("unexpectedly raised" KABOOM) |}]
   in
   return ()
@@ -306,7 +308,7 @@ let%expect_test "[require_does_not_raise_async], raise after return" =
   let%bind () =
     [%expect
       {|
-    (* require-failed: lib/expect_test_helpers/async/test/src/test_helpers.ml:LINE:COL. *)
+    (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
     ("Raised after return" KABOOM) |}]
   in
   return ()
@@ -319,7 +321,7 @@ let%expect_test "[require_does_raise_async], no raise" =
   let%bind () =
     [%expect
       {|
-    (* require-failed: lib/expect_test_helpers/async/test/src/test_helpers.ml:LINE:COL. *)
+    (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
     "did not raise" |}]
   in
   return ()
@@ -349,7 +351,7 @@ let%expect_test "[require_does_raise_async], raise after return" =
     [%expect
       {|
     ("Raised after return"
-     lib/expect_test_helpers/async/test/src/test_helpers.ml:LINE:COL
+     lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL
      "also KAPOW") |}]
   in
   return ()

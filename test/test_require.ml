@@ -20,7 +20,7 @@ let%expect_test "[require]" =
   let%bind () =
     [%expect
       {|
-    (* require-failed: lib/expect_test_helpers/async/test/src/test_require.ml:LINE:COL. *)
+    (* require-failed: lib/expect_test_helpers/async/test/test_require.ml:LINE:COL. *)
     additional-info |}]
   in
   return ()
