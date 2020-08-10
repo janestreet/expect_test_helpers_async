@@ -151,12 +151,10 @@ let%expect_test "system, with non-zero exit" =
 ;;
 
 let%expect_test "system, with multi-line command" =
-  let%bind () =
-    system {|
+  let%bind () = system {|
       for i in $(seq 1 10); do
         echo $i
-      done; |}
-  in
+      done; |} in
   [%expect {|
     1
     2
@@ -238,8 +236,7 @@ let%expect_test "[show_raise_async], raises hiding positions" =
   let%bind () =
     show_raise_async ~hide_positions:true (fun () -> raise_s [%message [%here]])
   in
-  [%expect
-    {|
+  [%expect {|
     (raised lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL) |}]
 ;;
 

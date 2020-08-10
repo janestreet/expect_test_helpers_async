@@ -143,8 +143,7 @@ let set_temporarily_async r x ~f = sets_temporarily_async [ T (r, x) ] ~f
 let try_with f ~rest =
   let monitor = Monitor.create () in
   Monitor.detach_and_iter_errors monitor ~f:(fun exn -> rest (Monitor.extract_exn exn));
-  Scheduler.within' ~monitor (fun () ->
-    Monitor.try_with ~extract_exn:true ~rest:`Raise f)
+  Scheduler.within' ~monitor (fun () -> Monitor.try_with ~extract_exn:true ~rest:`Raise f)
 ;;
 
 let show_raise_async (type a) ?hide_positions (f : unit -> a Deferred.t) =
