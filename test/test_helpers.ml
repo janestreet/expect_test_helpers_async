@@ -7,19 +7,22 @@ let raises_exe = "bin/raises.exe"
 let%expect_test "[~hide_positions:true] with a [Time.t]" =
   print_s ~hide_positions:true [%message (Time.epoch : Time.t)];
   [%expect {|
-    (Time.epoch (1969-12-31 19:00:00.000000-05:00)) |}]
+    (Time.epoch (1969-12-31 19:00:00.000000-05:00)) |}];
+  return ()
 ;;
 
 let%expect_test "run" =
   let%bind () = run "echo" [ "foo" ] in
-  [%expect {| foo |}]
+  [%expect {| foo |}];
+  return ()
 ;;
 
 let%expect_test "run, with print_cmdline:true" =
   let%bind () = run ~print_cmdline:true "echo" [ "foo" ] in
   [%expect {|
     (run (cmdline (echo foo)))
-    foo |}]
+    foo |}];
+  return ()
 ;;
 
 let with_cd_into_temp_dir f =
@@ -34,9 +37,9 @@ let%expect_test "run, with working dir" =
     let%bind () = run "mkdir" [ "foo" ] in
     let%bind () = run "touch" [ "foo/bar" ] in
     let%bind () = run "ls" [] in
-    let%bind () = [%expect {| foo |}] in
+    [%expect {| foo |}];
     let%bind () = run "ls" [] ~working_dir:"./foo" in
-    let%bind () = [%expect {| bar |}] in
+    [%expect {| bar |}];
     return ())
 ;;
 
@@ -44,20 +47,23 @@ let%expect_test "run, with no expansion" =
   with_cd_into_temp_dir (fun () ->
     let%bind () = run "echo" [ "~" ] in
     [%expect {|
-      ~ |}])
+      ~ |}];
+    return ())
 ;;
 
 let%expect_test "run, with stdin" =
   let%bind () = run "cat" [ "-" ] ~stdin:"foo $PATH" in
   [%expect {|
-    foo $PATH |}]
+    foo $PATH |}];
+  return ()
 ;;
 
 let%expect_test "run, with stdin and print_cmdline:true" =
   let%bind () = run ~print_cmdline:true "cat" [ "-" ] ~stdin:"foo" in
   [%expect {|
     (run (cmdline (cat -)) (stdin foo))
-    foo |}]
+    foo |}];
+  return ()
 ;;
 
 let%expect_test "run, with stderr and non-zero exit" =
@@ -67,26 +73,25 @@ let%expect_test "run, with stderr and non-zero exit" =
       {|
       ("Unclean exit" (Exit_non_zero 1))
       --- STDERR ---
-      cat: ./i-hope-this-does-not-exist: No such file or directory |}])
+      cat: ./i-hope-this-does-not-exist: No such file or directory |}];
+    return ())
 ;;
 
 let%expect_test "run, with print_stdout/print_stderr overrides" =
   with_cd_into_temp_dir (fun () ->
     let%bind () = run "echo" [ "success" ] ~print_stdout:If_unclean_exit in
-    let%bind () = [%expect {| |}] in
+    [%expect {| |}];
     let%bind () =
       run "cat" [ "./i-hope-this-does-not-exist" ] ~print_stderr:If_unclean_exit
     in
-    let%bind () =
-      [%expect
-        {|
+    [%expect
+      {|
       ("Unclean exit" (Exit_non_zero 1))
       --- STDERR ---
-      cat: ./i-hope-this-does-not-exist: No such file or directory |}]
-    in
+      cat: ./i-hope-this-does-not-exist: No such file or directory |}];
     let%bind () = run "cat" [ "./i-hope-this-does-not-exist" ] ~print_stderr:Never in
-    let%bind () = [%expect {|
-      ("Unclean exit" (Exit_non_zero 1)) |}] in
+    [%expect {|
+      ("Unclean exit" (Exit_non_zero 1)) |}];
     return ())
 ;;
 
@@ -102,7 +107,8 @@ let%expect_test "run, with bad exec" =
           Unix.Unix_error
           "No such file or directory"
           Core.Unix.create_process
-          "((prog ./i-hope-this-does-not-exist) (args ()) (env (Extend ((OCAMLRUNPARAM b=0)))))"))) |}])
+          "((prog ./i-hope-this-does-not-exist) (args ()) (env (Extend ((OCAMLRUNPARAM b=0)))))"))) |}];
+    return ())
 ;;
 
 let%expect_test "[run ~hide_positions:true]" =
@@ -110,7 +116,8 @@ let%expect_test "[run ~hide_positions:true]" =
     run ~hide_positions:true "echo" [ [%message [%here]] |> Sexp.to_string ]
   in
   [%expect {|
-    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}]
+    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}];
+  return ()
 ;;
 
 let%expect_test "run, with postprocess" =
@@ -123,7 +130,8 @@ let%expect_test "run, with postprocess" =
       [ [%message [%here]] |> Sexp.to_string ]
   in
   [%expect {|
-    lib/expect_foo_helpers/async/foo/foo_helpers.ml:LINE:COL |}]
+    lib/expect_foo_helpers/async/foo/foo_helpers.ml:LINE:COL |}];
+  return ()
 ;;
 
 let%expect_test "system" =
@@ -131,7 +139,8 @@ let%expect_test "system" =
   [%expect {|
     2
     --- STDERR ---
-    2 |}]
+    2 |}];
+  return ()
 ;;
 
 let%expect_test "system, with cmdline" =
@@ -141,13 +150,15 @@ let%expect_test "system, with cmdline" =
     (run (cmdline (/bin/bash -c " echo $((1 + 1)) | tee /dev/stderr ")))
     2
     --- STDERR ---
-    2 |}]
+    2 |}];
+  return ()
 ;;
 
 let%expect_test "system, with non-zero exit" =
   let%bind () = system {| kill $$ |} in
   [%expect {|
-    ("Unclean exit" (Signal sigterm)) |}]
+    ("Unclean exit" (Signal sigterm)) |}];
+  return ()
 ;;
 
 let%expect_test "system, with multi-line command" =
@@ -165,13 +176,15 @@ let%expect_test "system, with multi-line command" =
     7
     8
     9
-    10 |}]
+    10 |}];
+  return ()
 ;;
 
 let%expect_test "system, with stdin" =
   let%bind () = system {| cat - |} ~stdin:"foo $PATH" in
   [%expect {|
-    foo $PATH |}]
+    foo $PATH |}];
+  return ()
 ;;
 
 let%expect_test "system, with non-existent command" =
@@ -181,12 +194,14 @@ let%expect_test "system, with non-existent command" =
       {|
       ("Unclean exit" (Exit_non_zero 127))
       --- STDERR ---
-      /bin/bash: ./i-hope-this-does-not-exist: No such file or directory |}])
+      /bin/bash: ./i-hope-this-does-not-exist: No such file or directory |}];
+    return ())
 ;;
 
 let%expect_test "system, with a bash-ism not in POSIX or POSIX-mode bash" =
   let%bind () = system "cat <(echo foo)" in
-  [%expect {| foo |}]
+  [%expect {| foo |}];
+  return ()
 ;;
 
 let%expect_test "[system ~hide_positions:true]" =
@@ -198,7 +213,8 @@ let%expect_test "[system ~hide_positions:true]" =
   [%expect
     {|
     --- STDERR ---
-    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}]
+    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}];
+  return ()
 ;;
 
 let%expect_test "system, without backtraces" =
@@ -209,7 +225,8 @@ let%expect_test "system, without backtraces" =
     --- STDERR ---
     Uncaught exception:
 
-      "An exception appeared!" |}]
+      "An exception appeared!" |}];
+  return ()
 ;;
 
 
@@ -221,7 +238,8 @@ let%expect_test "run, without backtraces" =
     --- STDERR ---
     Uncaught exception:
 
-      "An exception appeared!" |}]
+      "An exception appeared!" |}];
+  return ()
 ;;
 
 (* Can't test [run ~enable_ocaml_backtraces:true] because the backtraces are fragile. *)
@@ -229,7 +247,8 @@ let%expect_test "run, without backtraces" =
 let%expect_test "[show_raise_async], no exception, ignores return value" =
   let%bind () = show_raise_async ~hide_positions:true (fun () -> Deferred.return 1) in
   [%expect {|
-    "did not raise" |}]
+    "did not raise" |}];
+  return ()
 ;;
 
 let%expect_test "[show_raise_async], raises hiding positions" =
@@ -237,7 +256,8 @@ let%expect_test "[show_raise_async], raises hiding positions" =
     show_raise_async ~hide_positions:true (fun () -> raise_s [%message [%here]])
   in
   [%expect {|
-    (raised lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL) |}]
+    (raised lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL) |}];
+  return ()
 ;;
 
 let%expect_test "[show_raise_async] with a deep stack" =
@@ -250,7 +270,8 @@ let%expect_test "[show_raise_async] with a deep stack" =
   in
   let%bind () = show_raise_async (fun () -> loop 5) in
   [%expect {|
-    (raised (Failure raising)) |}]
+    (raised (Failure raising)) |}];
+  return ()
 ;;
 
 let%expect_test "[show_raise_async], raise after return" =
@@ -261,20 +282,18 @@ let%expect_test "[show_raise_async], raise after return" =
         Exn.raise_without_backtrace (Failure "raise after return"));
       Deferred.unit)
   in
-  let%bind () = [%expect {|
-    "did not raise" |}] in
+  [%expect {|
+    "did not raise" |}];
   Ivar.fill returned ();
   let%bind () = Scheduler.yield () in
-  let%bind () =
-    [%expect {|
-    ("Raised after return" (Failure "raise after return")) |}]
-  in
+  [%expect {|
+    ("Raised after return" (Failure "raise after return")) |}];
   return ()
 ;;
 
 let%expect_test "[require_does_not_raise_async], no raise" =
   let%bind () = require_does_not_raise_async [%here] (fun () -> return ()) in
-  let%bind () = [%expect {| |}] in
+  [%expect {| |}];
   return ()
 ;;
 
@@ -283,12 +302,10 @@ let%expect_test "[require_does_not_raise_async], raises" =
     require_does_not_raise_async [%here] ~cr:Comment (fun () ->
       raise_s [%message "KABOOM"])
   in
-  let%bind () =
-    [%expect
-      {|
+  [%expect
+    {|
     (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
-    ("unexpectedly raised" KABOOM) |}]
-  in
+    ("unexpectedly raised" KABOOM) |}];
   return ()
 ;;
 
@@ -299,15 +316,13 @@ let%expect_test "[require_does_not_raise_async], raise after return" =
       upon (Ivar.read returned) (fun () -> raise_s [%message "KABOOM"]);
       return ())
   in
-  let%bind () = [%expect {| |}] in
+  [%expect {| |}];
   Ivar.fill returned ();
   let%bind () = Scheduler.yield () in
-  let%bind () =
-    [%expect
-      {|
+  [%expect
+    {|
     (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
-    ("Raised after return" KABOOM) |}]
-  in
+    ("Raised after return" KABOOM) |}];
   return ()
 ;;
 
@@ -315,12 +330,10 @@ let%expect_test "[require_does_raise_async], no raise" =
   let%bind () =
     require_does_raise_async [%here] ~cr:Comment (fun () -> return `ignore_return_value)
   in
-  let%bind () =
-    [%expect
-      {|
+  [%expect
+    {|
     (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
-    "did not raise" |}]
-  in
+    "did not raise" |}];
   return ()
 ;;
 
@@ -328,8 +341,8 @@ let%expect_test "[require_does_raise_async], raises" =
   let%bind () =
     require_does_raise_async [%here] (fun () -> raise_s [%message "KABOOM"])
   in
-  let%bind () = [%expect {|
-    KABOOM |}] in
+  [%expect {|
+    KABOOM |}];
   return ()
 ;;
 
@@ -340,16 +353,14 @@ let%expect_test "[require_does_raise_async], raise after return" =
       upon (Ivar.read returned) (fun () -> raise_s [%message "also KAPOW"]);
       raise_s [%message "KABOOM"])
   in
-  let%bind () = [%expect {|
-    KABOOM |}] in
+  [%expect {|
+    KABOOM |}];
   Ivar.fill returned ();
   let%bind () = Scheduler.yield () in
-  let%bind () =
-    [%expect
-      {|
+  [%expect
+    {|
     ("Raised after return"
      lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL
-     "also KAPOW") |}]
-  in
+     "also KAPOW") |}];
   return ()
 ;;

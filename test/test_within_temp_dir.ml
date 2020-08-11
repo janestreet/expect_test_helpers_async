@@ -20,7 +20,8 @@ let%expect_test "[within_temp_dir `In_temp_as]" =
          return ())
   in
   [%expect {|
-    |}]
+    |}];
+  return ()
 ;;
 
 let%expect_test "[within_temp_dir `In_path_as]" =
@@ -32,5 +33,6 @@ let%expect_test "[within_temp_dir `In_path_as]" =
          return ())
   in
   [%expect {|
-     ok |}]
+     ok |}];
+  return ()
 ;;

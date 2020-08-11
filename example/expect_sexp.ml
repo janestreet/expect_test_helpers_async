@@ -22,40 +22,35 @@ let%expect_test "sexp command" =
     (* [run] is a good default for shell invocations, since it doesn't expose you to any
        escaping problems. *)
     let%bind () = run "cat" [ dir ^/ "foo.sexp" ] in
-    let%bind () =
-      [%expect
-        {|
+    [%expect
+      {|
       ((This (is an s-expression) ((s a) (b c) (d e)))
        (a b c d e f g h i j k l m n o p q r s t u v w x y z))
-    |}]
-    in
+    |}];
     (* We use [system] here because we want to do some piping, which is awkward
        otherwise *)
     let%bind () = system (sprintf "cat %s | %s pp" sexp_file sexp) in
-    let%bind () =
-      [%expect
-        {|
+    [%expect
+      {|
       ((This
          (is an s-expression)
          ((s a)
           (b c)
           (d e)))
        (a b c d e f g h i j k l m n o p q r s t u v w x y z))
-    |}]
-    in
+    |}];
     let%bind () = system (sprintf "cat %s | %s print -machine" sexp_file sexp) in
-    let%bind () =
-      [%expect
-        {|
+    [%expect
+      {|
       ((This(is an s-expression)((s a)(b c)(d e)))(a b c d e f g h i j k l m n o p q r s t u v w x y z))
-    |}]
-    in
+    |}];
     show_raise (fun () -> raise_s [%message "foo" 13]);
-    let%bind () = [%expect {|
+    [%expect {|
       (raised (foo 13))
-    |}] in
+    |}];
     show_raise ignore;
     [%expect {|
       "did not raise"
-    |}])
+    |}];
+    return ())
 ;;

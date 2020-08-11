@@ -14,7 +14,8 @@ let%expect_test "without an [%expect]" =
 let%expect_test "with an [%expect]" =
   Printexc.record_backtrace false;
   ignore (assert false);
-  [%expect.unreachable]
+  [%expect.unreachable];
+  return ()
 [@@expect.uncaught_exn
   {|
   (monitor.ml.Error "Assert_failure test_uncaught_exn.ml:16:9"
