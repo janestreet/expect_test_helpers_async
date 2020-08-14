@@ -27,7 +27,7 @@ let%expect_test "[within_temp_dir `In_temp_as]" =
 let%expect_test "[within_temp_dir `In_path_as]" =
   let%bind () =
     within_temp_dir
-      ~links:[ "inline_tests_runner.exe", `In_path_as, "foobar" ]
+      ~links:[ "bin/raises.exe", `In_path_as, "foobar" ]
       (fun () ->
          let%bind () = system "which foobar >/dev/null && echo ok" in
          return ())
