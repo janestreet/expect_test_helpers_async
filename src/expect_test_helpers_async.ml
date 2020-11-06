@@ -88,6 +88,8 @@ let with_temp_dir f =
   (* Note that this blocks *)
   assert (Filename.is_absolute dir);
   Monitor.protect
+    ~run:`Schedule
+    ~rest:`Log
     (fun () -> f dir)
     ~finally:(fun () ->
       if keep_tmp_dir
@@ -99,8 +101,12 @@ let with_temp_dir f =
 
 let hardlink_or_copy ~orig ~dst =
   match%bind
-    Monitor.try_with ~extract_exn:true (fun () ->
-      Unix.link ~target:orig ~link_name:dst ())
+    Monitor.try_with
+      ~run:
+        `Schedule
+      ~rest:`Log
+      ~extract_exn:true
+      (fun () -> Unix.link ~target:orig ~link_name:dst ())
   with
   | Ok () -> return ()
   | Error (Unix.Unix_error (EXDEV, _, _)) -> run "cp" [ "-T"; "--"; orig; dst ]
@@ -125,17 +131,26 @@ let within_temp_dir ?(links = []) f =
         hardlink_or_copy ~orig:file ~dst:(temp_dir ^/ link_as))
     in
     let%bind () = Unix.chdir temp_dir in
-    Monitor.protect f ~finally:(fun () ->
-      Unix.putenv ~key:path_var ~data:old_path;
-      Unix.chdir cwd))
+    Monitor.protect
+      ~run:
+        `Schedule
+      ~rest:`Log
+      f
+      ~finally:(fun () ->
+        Unix.putenv ~key:path_var ~data:old_path;
+        Unix.chdir cwd))
 ;;
 
 let sets_temporarily_async and_values ~f =
   let restore_to = List.map and_values ~f:Ref.And_value.snapshot in
   Ref.And_value.sets and_values;
-  Monitor.protect f ~finally:(fun () ->
-    Ref.And_value.sets restore_to;
-    return ())
+  Monitor.protect
+    ~run:`Schedule
+    ~rest:`Log
+    f
+    ~finally:(fun () ->
+      Ref.And_value.sets restore_to;
+      return ())
 ;;
 
 let set_temporarily_async r x ~f = sets_temporarily_async [ T (r, x) ] ~f
@@ -143,7 +158,13 @@ let set_temporarily_async r x ~f = sets_temporarily_async [ T (r, x) ] ~f
 let try_with f ~rest =
   let monitor = Monitor.create () in
   Monitor.detach_and_iter_errors monitor ~f:(fun exn -> rest (Monitor.extract_exn exn));
-  Scheduler.within' ~monitor (fun () -> Monitor.try_with ~extract_exn:true ~rest:`Raise f)
+  Scheduler.within' ~monitor (fun () ->
+    Monitor.try_with
+      ~run:
+        `Schedule
+      ~extract_exn:true
+      ~rest:`Raise
+      f)
 ;;
 
 let show_raise_async (type a) ?hide_positions (f : unit -> a Deferred.t) =

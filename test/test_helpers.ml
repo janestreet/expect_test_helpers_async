@@ -29,7 +29,12 @@ let with_cd_into_temp_dir f =
   with_temp_dir (fun dir ->
     let%bind cwd = Unix.getcwd () in
     let%bind () = Unix.chdir dir in
-    Monitor.protect f ~finally:(fun () -> Unix.chdir cwd))
+    Monitor.protect
+      ~run:
+        `Schedule
+      ~rest:`Log
+      f
+      ~finally:(fun () -> Unix.chdir cwd))
 ;;
 
 let%expect_test "run, with working dir" =
