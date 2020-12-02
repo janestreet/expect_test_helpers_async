@@ -12,9 +12,9 @@ val with_temp_dir : (string -> 'a Deferred.t) -> 'a Deferred.t
 
 (** [within_temp_dir ?links f] creates a temporary directory, $T, and:
 
-    1. Adds $T/bin to the PATH environment variable.
-    2. For each [file, `In_path_as, name] in [links], links [file] as $T/bin/[name].
-    3. For each [file, `In_temp_as, name] in [links], links [file] as $T/[name].
+    1. For each [file, `In_path_as, name] in [links], links [file] as $T/bin/[name].
+    2. For each [file, `In_temp_as, name] in [links], links [file] as $T/[name].
+    3. Adds $T/bin to the PATH environment variable if step 1 added any links.
 
     It then [cd]s to $T and calls [f].  After [f] exits, it [cd]s back, removes the
     temporary directory, and restores the original PATH.

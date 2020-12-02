@@ -118,15 +118,20 @@ let within_temp_dir ?(links = []) f =
   with_temp_dir (fun temp_dir ->
     let path_var = "PATH" in
     let old_path = Unix.getenv_exn path_var in
-    let bin = temp_dir ^/ "bin" in
-    Unix.putenv ~key:path_var ~data:(String.concat ~sep:":" [ bin; old_path ]);
-    let%bind () = run "mkdir" [ bin ] in
+    let add_bin_to_path =
+      Lazy_deferred.create (fun () ->
+        let bin = temp_dir ^/ "bin" in
+        Unix.putenv ~key:path_var ~data:(String.concat ~sep:":" [ bin; old_path ]);
+        run "mkdir" [ bin ])
+    in
     let%bind () =
       Deferred.List.iter links ~f:(fun (file, action, link_as) ->
-        let link_as =
+        let%bind link_as =
           match action with
-          | `In_path_as -> "bin" ^/ link_as
-          | `In_temp_as -> link_as
+          | `In_path_as ->
+            let%bind () = Lazy_deferred.force_exn add_bin_to_path in
+            return ("bin" ^/ link_as)
+          | `In_temp_as -> return link_as
         in
         hardlink_or_copy ~orig:file ~dst:(temp_dir ^/ link_as))
     in
