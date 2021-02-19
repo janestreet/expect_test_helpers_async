@@ -8,7 +8,7 @@ open Expect_test_helpers_core
 
 (** [with_temp_dir f] creates a temporary directory which is fed to [f].  The directory
     is removed after [f] exits. *)
-val with_temp_dir : (string -> 'a Deferred.t) -> 'a Deferred.t
+val with_temp_dir : ?in_dir:string -> (string -> 'a Deferred.t) -> 'a Deferred.t
 
 (** [within_temp_dir ?links f] creates a temporary directory, $T, and:
 
@@ -24,9 +24,14 @@ val with_temp_dir : (string -> 'a Deferred.t) -> 'a Deferred.t
     are not on the same file system, [within_temp_dir] copies the files instead of
     creating hard links. *)
 val within_temp_dir
-  :  ?links:(string * [ `In_path_as | `In_temp_as ] * string) list
+  :  ?in_dir:string
+  -> ?links:(string * [ `In_path_as | `In_temp_as ] * string) list
   -> (unit -> 'a Deferred.t)
   -> 'a Deferred.t
+
+(** [with_env] sets specified environment variables before calling [f].
+    After [f] exits, these variables are reset to their previous values. *)
+val with_env_async : (string * string) list -> f:(unit -> 'a Deferred.t) -> 'a Deferred.t
 
 (** Like [Ref.set_temporarily], but waits for a deferred function to finish. *)
 val set_temporarily_async : 'a ref -> 'a -> f:(unit -> 'b Deferred.t) -> 'b Deferred.t

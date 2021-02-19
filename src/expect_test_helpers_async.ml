@@ -81,10 +81,14 @@ let system ?enable_ocaml_backtraces ?hide_positions ?print_cmdline ?stdin cmd =
     [ "-c"; cmd ]
 ;;
 
-let with_temp_dir f =
-  let in_dir = Sys.getenv "TMPDIR" in
+let with_temp_dir ?in_dir f =
+  let in_dir =
+    match in_dir with
+    | None -> Sys.getenv "TMPDIR"
+    | Some in_dir -> Some in_dir
+  in
   let keep_tmp_dir = Option.is_some (Sys.getenv "KEEP_EXPECT_TEST_DIR") in
-  let dir = Filename.temp_dir ?in_dir "expect-" "-test" in
+  let dir = Filename.temp_dir ?in_dir "._expect-" "-test.tmp" in
   (* Note that this blocks *)
   assert (Filename.is_absolute dir);
   Monitor.protect
@@ -97,6 +101,21 @@ let with_temp_dir f =
         eprintf "OUTPUT LEFT IN %s\n" dir;
         return ())
       else run "rm" [ "-rf"; dir ])
+;;
+
+let with_env_async env ~f =
+  let env = String.Map.of_alist_exn env |> Map.map ~f:(fun data -> Some data) in
+  let env_snapshot = Map.mapi env ~f:(fun ~key ~data:_ -> Sys.getenv key) in
+  let set_env =
+    Map.iteri ~f:(fun ~key ~data ->
+      match data with
+      | None -> Unix.unsetenv key
+      | Some data -> Unix.putenv ~key ~data)
+  in
+  set_env env;
+  Monitor.protect f ~finally:(fun () ->
+    set_env env_snapshot;
+    return ())
 ;;
 
 let hardlink_or_copy ~orig ~dst =
@@ -113,9 +132,9 @@ let hardlink_or_copy ~orig ~dst =
   | Error e -> raise e
 ;;
 
-let within_temp_dir ?(links = []) f =
+let within_temp_dir ?in_dir ?(links = []) f =
   let%bind cwd = Unix.getcwd () in
-  with_temp_dir (fun temp_dir ->
+  with_temp_dir ?in_dir (fun temp_dir ->
     let path_var = "PATH" in
     let old_path = Unix.getenv_exn path_var in
     let add_bin_to_path =

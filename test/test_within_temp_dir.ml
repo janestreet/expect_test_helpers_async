@@ -84,3 +84,32 @@ let%expect_test "[within_temp_dir] setup" =
     `-- dictionary |}];
   return ()
 ;;
+
+let%expect_test "[within_temp_dir ~in_dir]" =
+  let%bind cwd = Sys.getcwd () in
+  (* without [in_dir] *)
+  let%bind () =
+    within_temp_dir (fun () ->
+      let%bind cwd_within_temp = Sys.getcwd () in
+      require
+        [%here]
+        (Filename.dirname cwd_within_temp <> cwd)
+        ~if_false_then_print_s:
+          (lazy [%message "" (cwd : string) (cwd_within_temp : string)]);
+      return ())
+  in
+  [%expect {| |}];
+  (* with [in_dir] *)
+  let%bind () =
+    within_temp_dir ~in_dir:cwd (fun () ->
+      let%bind cwd_within_temp = Sys.getcwd () in
+      require
+        [%here]
+        (Filename.dirname cwd_within_temp = cwd)
+        ~if_false_then_print_s:
+          (lazy [%message "" (cwd : string) (cwd_within_temp : string)]);
+      return ())
+  in
+  [%expect {| |}];
+  return ()
+;;
