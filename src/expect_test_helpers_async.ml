@@ -88,7 +88,7 @@ let with_temp_dir ?in_dir f =
     | Some in_dir -> Some in_dir
   in
   let keep_tmp_dir = Option.is_some (Sys.getenv "KEEP_EXPECT_TEST_DIR") in
-  let dir = Filename.temp_dir ?in_dir "._expect-" "-test.tmp" in
+  let dir = Filename_unix.temp_dir ?in_dir "._expect-" "-test.tmp" in
   (* Note that this blocks *)
   assert (Filename.is_absolute dir);
   Monitor.protect

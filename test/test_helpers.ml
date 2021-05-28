@@ -111,7 +111,7 @@ let%expect_test "run, with bad exec" =
         (error (
           Unix.Unix_error
           "No such file or directory"
-          Core.Unix.create_process
+          Core_unix.create_process
           "((prog ./i-hope-this-does-not-exist) (args ()) (env (Extend ((OCAMLRUNPARAM b=0)))))"))) |}];
     return ())
 ;;
