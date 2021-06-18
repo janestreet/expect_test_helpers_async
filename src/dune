@@ -1,5 +1,5 @@
 (library (name expect_test_helpers_async)
  (public_name expect_test_helpers_async)
- (libraries core async expect_test_helpers_core core.filename_unix
-  sexp_pretty)
+ (libraries core_kernel.core async expect_test_helpers_core
+  core.filename_unix sexp_pretty)
  (preprocess (pps ppx_jane)))
