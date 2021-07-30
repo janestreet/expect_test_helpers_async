@@ -227,3 +227,29 @@ let require_does_raise_async
   require_does_raise ~cr ~hide_positions ?show_backtrace here (fun () ->
     Result.ok_exn result)
 ;;
+
+let tty_log =
+  lazy
+    (Log.create
+       ~level:`Info
+       ~output:
+         (match Out_channel.create "/dev/tty" with
+          | oc -> [ Log.Output.writer `Text (Writer.of_out_channel oc Char) ]
+          | exception _ -> [])
+       (* We can explicitly use the wall clock because this output is designed to bypass
+          the expect test output capture mechanism. *)
+       ~time_source:
+         (Synchronous_time_source.wall_clock ())
+       (* [`Raise] causes background errors to be sent the monitor in effect when [create]
+          is called.  Since this value is lazy, it is not predictable which monitor is
+          active when [create] actually gets called, so we send the exn to the main
+          monitor instead.
+
+          This code is copied from the implementation of {!Async.Log.Make_global.log}. *)
+       ~on_error:
+         (`Call
+            (fun e ->
+               let e = Error.to_exn e in
+               Monitor.send_exn Monitor.main ~backtrace:`Get e))
+       ())
+;;

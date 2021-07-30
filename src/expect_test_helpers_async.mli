@@ -110,3 +110,14 @@ val require_does_raise_async
   -> Source_code_position.t
   -> (unit -> _ Deferred.t)
   -> unit Deferred.t
+
+(** A log that goes to the test runner's controlling terminal, if it exists.
+
+    This log's output is not captured by the expect test runner, and instead appears
+    immediately on the attached terminal[1].  This is especially useful when debugging
+    expect tests that time out.
+
+    [1]: When tests are run by a build system, there may be no controlling terminal, in
+    which case the output of this log is silently discarded.  You would need to run
+    [inline_test_runner] interactively to see output from this log. *)
+val tty_log : Log.t Lazy.t
