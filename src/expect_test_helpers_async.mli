@@ -121,3 +121,16 @@ val require_does_raise_async
     which case the output of this log is silently discarded.  You would need to run
     [inline_test_runner] interactively to see output from this log. *)
 val tty_log : Log.t Lazy.t
+
+(** Removes connection details (hostnames and ports) from sexps containing the connection
+    string "Client connected via TCP" followed by a host and port pair. *)
+val remove_connection_details : Sexp.t -> Sexp.t
+
+(** Sets [Async.Log.Global] output to one that elides log timestamps, time spans,
+    backtraces, and connection strings with hostnames and ports. These settings help make
+    output deterministic. Additionally runs [map_output], if provided, on each log line
+    before it is emitted. *)
+val with_robust_global_log_output
+  :  ?map_output:(string -> string)
+  -> (unit -> unit Deferred.t)
+  -> unit Deferred.t

@@ -15,7 +15,7 @@ let%expect_test "without an [%expect]" =
 
 let%expect_test "with an [%expect]" =
   Printexc.record_backtrace false;
-  ignore (failwith "foo");
+  ignore (failwith "foo" : _);
   [%expect.unreachable];
   return ()
 [@@expect.uncaught_exn

@@ -253,3 +253,31 @@ let tty_log =
                Monitor.send_exn Monitor.main ~backtrace:`Get e))
        ())
 ;;
+
+let remove_connection_details =
+  smash_sexp ~f:(function
+    | Sexp.(List [ (Atom "Client connected via TCP" as a); _ ]) ->
+      Sexp.(List [ a; Atom "HOST PORT" ])
+    | s -> s)
+;;
+
+let with_robust_global_log_output ?(map_output = Fn.id) fn =
+  let sexp_wrap f s =
+    match Sexp.of_string s with
+    | sexp -> sexp |> f |> sexp_to_string
+    | exception _ -> s
+  in
+  let output_mappers =
+    [ sexp_wrap (Fn.compose remove_backtraces remove_connection_details)
+    ; remove_time_spans
+    ; map_output
+    ]
+  in
+  let map_output init = List.fold ~init ~f:(fun s f -> f s) output_mappers in
+  let old_outputs = Log.Global.get_output () in
+  Monitor.protect
+    ~finally:(fun () -> Log.Global.set_output old_outputs |> return)
+    (fun () ->
+       Log.Global.set_output [ Log.For_testing.create_output ~map_output ];
+       fn ())
+;;

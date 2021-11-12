@@ -369,3 +369,57 @@ let%expect_test "[require_does_raise_async], raise after return" =
      "also KAPOW") |}];
   return ()
 ;;
+
+let%expect_test "remove_connection_details" =
+  {|(connection_description
+     ("Client connected via TCP" (some-random-hostname 38133))) |}
+  |> Sexp.of_string
+  |> remove_connection_details
+  |> print_s;
+  [%expect {| (connection_description ("Client connected via TCP" "HOST PORT")) |}];
+  return ()
+;;
+
+let%expect_test "with_robust_global_log_output" =
+  with_robust_global_log_output (fun () ->
+    {| ("Task error after 320.4ms."
+      (errors
+       (((rpc_error
+          (Uncaught_exn
+           ((location "server-side rpc computation")
+            (exn
+             (monitor.ml.Error ("Fake Failure" (message "Deliberate failure after 23.2ms"))
+              ("Raised at Base__Error.raise in file \"error.ml\" (inlined), line 9, characters 14-30"
+               "Called from Base__Error.raise_s in file \"error.ml\", line 10, characters 19-40"
+               "Called from Base__Result.try_with in file \"result.ml\", line 227, characters 9-15"))))))
+         (connection_description
+         ("Client connected via TCP" (some-random-hostname 38133)))
+         (rpc_tag rpc_parallel_plain_1) (rpc_version 0))))) |}
+    |> Sexp.of_string
+    |> Log.Global.error_s;
+    let%bind () = Log.Global.flushed () in
+    [%expect
+      {|
+    ("Task error after SPAN." (
+      errors ((
+        (rpc_error (
+          Uncaught_exn (
+            (location "server-side rpc computation")
+            (exn (
+              monitor.ml.Error
+              ("Fake Failure" (message "Deliberate failure after SPAN"))
+              ("ELIDED BACKTRACE"))))))
+        (connection_description ("Client connected via TCP" "HOST PORT"))
+        (rpc_tag     rpc_parallel_plain_1)
+        (rpc_version 0))))) |}];
+    return ())
+;;
+
+let%expect_test "with_robust_global_log_output with ~map_output" =
+  let replace_o = String.tr ~target:'o' ~replacement:'0' in
+  with_robust_global_log_output ~map_output:replace_o (fun () ->
+    "(errors (Hello World!))" |> Sexp.of_string |> Log.Global.error_s;
+    let%bind () = Log.Global.flushed () in
+    [%expect {| (err0rs (Hell0 W0rld!)) |}];
+    return ())
+;;
