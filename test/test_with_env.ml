@@ -68,10 +68,12 @@ let%expect_test "[with_env] with raising f" =
        [%expect {| ((EXPECT_TEST_FOO ())) |}];
        let%bind () =
          require_does_raise_async [%here] (fun () ->
-           with_env_async [ foo, "scoped value of foo" ] ~f:(fun () ->
-             print_env ();
-             [%expect {| ((EXPECT_TEST_FOO ("scoped value of foo"))) |}];
-             failwith "error"))
+           with_env_async
+             [ foo, "scoped value of foo" ]
+             ~f:(fun () ->
+               print_env ();
+               [%expect {| ((EXPECT_TEST_FOO ("scoped value of foo"))) |}];
+               failwith "error"))
        in
        [%expect {| (Failure error) |}];
        print_env ();

@@ -121,8 +121,7 @@ let with_env_async env ~f =
 let hardlink_or_copy ~orig ~dst =
   match%bind
     Monitor.try_with
-      ~run:
-        `Schedule
+      ~run:`Schedule
       ~rest:`Log
       ~extract_exn:true
       (fun () -> Unix.link ~target:orig ~link_name:dst ())
@@ -156,8 +155,7 @@ let within_temp_dir ?in_dir ?(links = []) f =
     in
     let%bind () = Unix.chdir temp_dir in
     Monitor.protect
-      ~run:
-        `Schedule
+      ~run:`Schedule
       ~rest:`Log
       f
       ~finally:(fun () ->
@@ -184,8 +182,7 @@ let try_with f ~rest =
   Monitor.detach_and_iter_errors monitor ~f:(fun exn -> rest (Monitor.extract_exn exn));
   Scheduler.within' ~monitor (fun () ->
     Monitor.try_with
-      ~run:
-        `Schedule
+      ~run:`Schedule
       ~extract_exn:true
       ~rest:`Raise
       f)
@@ -238,8 +235,7 @@ let tty_log =
           | exception _ -> [])
        (* We can explicitly use the wall clock because this output is designed to bypass
           the expect test output capture mechanism. *)
-       ~time_source:
-         (Synchronous_time_source.wall_clock ())
+       ~time_source:(Synchronous_time_source.wall_clock ())
        (* [`Raise] causes background errors to be sent the monitor in effect when [create]
           is called.  Since this value is lazy, it is not predictable which monitor is
           active when [create] actually gets called, so we send the exn to the main

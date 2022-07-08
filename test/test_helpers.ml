@@ -30,8 +30,7 @@ let with_cd_into_temp_dir f =
     let%bind cwd = Unix.getcwd () in
     let%bind () = Unix.chdir dir in
     Monitor.protect
-      ~run:
-        `Schedule
+      ~run:`Schedule
       ~rest:`Log
       f
       ~finally:(fun () -> Unix.chdir cwd))
