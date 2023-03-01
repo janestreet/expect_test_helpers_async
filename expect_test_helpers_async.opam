@@ -19,6 +19,7 @@ depends: [
   "sexp_pretty"
   "dune"                     {>= "2.0.0"}
 ]
+available: arch != "arm32" & arch != "x86_32"
 synopsis: "Async helpers for writing expectation tests"
 description: "
 This library provides helper functions for writing expect tests.

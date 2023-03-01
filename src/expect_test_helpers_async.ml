@@ -143,7 +143,7 @@ let within_temp_dir ?in_dir ?(links = []) f =
         run "mkdir" [ bin ])
     in
     let%bind () =
-      Deferred.List.iter links ~f:(fun (file, action, link_as) ->
+      Deferred.List.iter ~how:`Sequential links ~f:(fun (file, action, link_as) ->
         let%bind link_as =
           match action with
           | `In_path_as ->
