@@ -218,8 +218,7 @@ let require_does_raise_async
          returned... Just printing out "Raised after return" for now. *)
       print_s
         ~hide_positions
-        [%message
-          "Raised after return" ~_:(here : Source_code_position.t) ~_:(exn : exn)])
+        [%message "Raised after return" ~_:(here : Source_code_position.t) ~_:(exn : exn)])
   in
   require_does_raise ~cr ~hide_positions ?show_backtrace here (fun () ->
     Result.ok_exn result)
