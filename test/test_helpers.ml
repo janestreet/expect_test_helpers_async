@@ -288,7 +288,7 @@ let%expect_test "[show_raise_async], raise after return" =
   in
   [%expect {|
     "did not raise" |}];
-  Ivar.fill returned ();
+  Ivar.fill_exn returned ();
   let%bind () = Scheduler.yield () in
   [%expect {|
     ("Raised after return" (Failure "raise after return")) |}];
@@ -321,7 +321,7 @@ let%expect_test "[require_does_not_raise_async], raise after return" =
       return ())
   in
   [%expect {| |}];
-  Ivar.fill returned ();
+  Ivar.fill_exn returned ();
   let%bind () = Scheduler.yield () in
   [%expect
     {|
@@ -359,7 +359,7 @@ let%expect_test "[require_does_raise_async], raise after return" =
   in
   [%expect {|
     KABOOM |}];
-  Ivar.fill returned ();
+  Ivar.fill_exn returned ();
   let%bind () = Scheduler.yield () in
   [%expect
     {|
@@ -421,4 +421,23 @@ let%expect_test "with_robust_global_log_output with ~map_output" =
     let%bind () = Log.Global.flushed () in
     [%expect {| (err0rs (Hell0 W0rld!)) |}];
     return ())
+;;
+
+let%expect_test "[remove_backtraces] with no interesting backtrace lines except the \
+                 monitor"
+  =
+  let wrap_exn unwrapped_exn =
+    let monitor = Monitor.create ~name:"my-monitor" () in
+    let wrapped_exn_deferred = Monitor.detach_and_get_next_error monitor in
+    let backtrace = `This (Backtrace.get ~at_most_num_frames:0 ()) in
+    Monitor.send_exn monitor ~backtrace unwrapped_exn;
+    wrapped_exn_deferred
+  in
+  let%bind exn = wrap_exn (Error.to_exn (Error.of_string "my-error")) in
+  let sexp = [%sexp (exn : exn)] in
+  print_s sexp;
+  [%expect {| (monitor.ml.Error my-error ("Caught by monitor my-monitor")) |}];
+  print_s (remove_backtraces sexp);
+  [%expect {| (monitor.ml.Error my-error ("ELIDED BACKTRACE")) |}];
+  return ()
 ;;
