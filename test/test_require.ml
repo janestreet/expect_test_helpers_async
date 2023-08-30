@@ -7,8 +7,7 @@ let%expect_test "[require]" =
   [%expect {|
     |}];
   require [%here] false ~cr:CR_someday;
-  [%expect
-    {|
+  [%expect {|
     |}];
   require
     [%here]

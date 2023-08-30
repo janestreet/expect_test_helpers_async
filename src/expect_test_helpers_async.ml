@@ -11,17 +11,17 @@ module Print_rule = struct
 end
 
 let run
-      ?(enable_ocaml_backtraces = false)
-      ?(extend_env = [])
-      ?(hide_positions = false)
-      ?(postprocess = Fn.id)
-      ?(print_cmdline = false)
-      ?(print_stdout = Print_rule.Always)
-      ?(print_stderr = Print_rule.Always)
-      ?stdin
-      ?working_dir
-      prog
-      args
+  ?(enable_ocaml_backtraces = false)
+  ?(extend_env = [])
+  ?(hide_positions = false)
+  ?(postprocess = Fn.id)
+  ?(print_cmdline = false)
+  ?(print_stdout = Print_rule.Always)
+  ?(print_stderr = Print_rule.Always)
+  ?stdin
+  ?working_dir
+  prog
+  args
   =
   let env =
     `Extend
@@ -120,11 +120,8 @@ let with_env_async env ~f =
 
 let hardlink_or_copy ~orig ~dst =
   match%bind
-    Monitor.try_with
-      ~run:`Schedule
-      ~rest:`Log
-      ~extract_exn:true
-      (fun () -> Unix.link ~target:orig ~link_name:dst ())
+    Monitor.try_with ~run:`Schedule ~rest:`Log ~extract_exn:true (fun () ->
+      Unix.link ~target:orig ~link_name:dst ())
   with
   | Ok () -> return ()
   | Error (Unix.Unix_error (EXDEV, _, _)) -> run "cp" [ "-T"; "--"; orig; dst ]
@@ -154,25 +151,17 @@ let within_temp_dir ?in_dir ?(links = []) f =
         hardlink_or_copy ~orig:file ~dst:(temp_dir ^/ link_as))
     in
     let%bind () = Unix.chdir temp_dir in
-    Monitor.protect
-      ~run:`Schedule
-      ~rest:`Log
-      f
-      ~finally:(fun () ->
-        Unix.putenv ~key:path_var ~data:old_path;
-        Unix.chdir cwd))
+    Monitor.protect ~run:`Schedule ~rest:`Log f ~finally:(fun () ->
+      Unix.putenv ~key:path_var ~data:old_path;
+      Unix.chdir cwd))
 ;;
 
 let sets_temporarily_async and_values ~f =
   let restore_to = List.map and_values ~f:Ref.And_value.snapshot in
   Ref.And_value.sets and_values;
-  Monitor.protect
-    ~run:`Schedule
-    ~rest:`Log
-    f
-    ~finally:(fun () ->
-      Ref.And_value.sets restore_to;
-      return ())
+  Monitor.protect ~run:`Schedule ~rest:`Log f ~finally:(fun () ->
+    Ref.And_value.sets restore_to;
+    return ())
 ;;
 
 let set_temporarily_async r x ~f = sets_temporarily_async [ T (r, x) ] ~f
@@ -181,11 +170,7 @@ let try_with f ~rest =
   let monitor = Monitor.create () in
   Monitor.detach_and_iter_errors monitor ~f:(fun exn -> rest (Monitor.extract_exn exn));
   Scheduler.within' ~monitor (fun () ->
-    Monitor.try_with
-      ~run:`Schedule
-      ~extract_exn:true
-      ~rest:`Raise
-      f)
+    Monitor.try_with ~run:`Schedule ~extract_exn:true ~rest:`Raise f)
 ;;
 
 let show_raise_async (type a) ?hide_positions (f : unit -> a Deferred.t) =
@@ -206,11 +191,11 @@ let require_does_not_raise_async ?cr ?hide_positions ?show_backtrace here f =
 ;;
 
 let require_does_raise_async
-      ?(cr = CR.CR)
-      ?(hide_positions = CR.hide_unstable_output cr)
-      ?show_backtrace
-      here
-      f
+  ?(cr = CR.CR)
+  ?(hide_positions = CR.hide_unstable_output cr)
+  ?show_backtrace
+  here
+  f
   =
   let%map result =
     try_with f ~rest:(fun exn ->
@@ -232,10 +217,10 @@ let tty_log =
          (match Out_channel.create "/dev/tty" with
           | oc -> [ Log.Output.writer `Text (Writer.of_out_channel oc Char) ]
           | exception _ -> [])
-       (* We can explicitly use the wall clock because this output is designed to bypass
+         (* We can explicitly use the wall clock because this output is designed to bypass
           the expect test output capture mechanism. *)
        ~time_source:(Synchronous_time_source.wall_clock ())
-       (* [`Raise] causes background errors to be sent the monitor in effect when [create]
+         (* [`Raise] causes background errors to be sent the monitor in effect when [create]
           is called.  Since this value is lazy, it is not predictable which monitor is
           active when [create] actually gets called, so we send the exn to the main
           monitor instead.
@@ -243,9 +228,9 @@ let tty_log =
           This code is copied from the implementation of {!Async.Log.Make_global.log}. *)
        ~on_error:
          (`Call
-            (fun e ->
-               let e = Error.to_exn e in
-               Monitor.send_exn Monitor.main ~backtrace:`Get e))
+           (fun e ->
+             let e = Error.to_exn e in
+             Monitor.send_exn Monitor.main ~backtrace:`Get e))
        ())
 ;;
 
@@ -273,6 +258,6 @@ let with_robust_global_log_output ?(map_output = Fn.id) fn =
   Monitor.protect
     ~finally:(fun () -> Log.Global.set_output old_outputs |> return)
     (fun () ->
-       Log.Global.set_output [ Log.For_testing.create_output ~map_output ];
-       fn ())
+      Log.Global.set_output [ Log.For_testing.create_output ~map_output ];
+      fn ())
 ;;

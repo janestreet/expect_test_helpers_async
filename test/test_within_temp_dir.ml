@@ -11,13 +11,13 @@ let%expect_test "[within_temp_dir `In_temp_as]" =
     within_temp_dir
       ~links:[ jbuild, `In_temp_as, foobar ]
       (fun () ->
-         let%bind foobar_contents = Reader.file_contents "foobar" in
-         require
-           [%here]
-           (jbuild_contents = foobar_contents)
-           ~if_false_then_print_s:
-             (lazy [%message "" (jbuild_contents : string) (foobar_contents : string)]);
-         return ())
+        let%bind foobar_contents = Reader.file_contents "foobar" in
+        require
+          [%here]
+          (jbuild_contents = foobar_contents)
+          ~if_false_then_print_s:
+            (lazy [%message "" (jbuild_contents : string) (foobar_contents : string)]);
+        return ())
   in
   [%expect {| |}];
   return ()
@@ -28,8 +28,8 @@ let%expect_test "[within_temp_dir `In_path_as]" =
     within_temp_dir
       ~links:[ "bin/raises.exe", `In_path_as, "foobar" ]
       (fun () ->
-         let%bind () = system "which foobar >/dev/null && echo ok" in
-         return ())
+        let%bind () = system "which foobar >/dev/null && echo ok" in
+        return ())
   in
   [%expect {| ok |}];
   return ()

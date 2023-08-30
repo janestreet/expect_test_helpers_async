@@ -19,41 +19,41 @@ let%expect_test "[with_env]" =
       Unix.unsetenv baz;
       return ())
     (fun () ->
-       Unix.putenv ~key:bar ~data:"old value of bar";
-       Unix.putenv ~key:baz ~data:"old value of baz";
-       print_env ();
-       [%expect
-         {|
+      Unix.putenv ~key:bar ~data:"old value of bar";
+      Unix.putenv ~key:baz ~data:"old value of baz";
+      print_env ();
+      [%expect
+        {|
          ((EXPECT_TEST_FOO ())
           (EXPECT_TEST_BAR ("old value of bar"))
           (EXPECT_TEST_BAZ ("old value of baz"))) |}];
-       let%bind () =
-         with_env_async
-           [ foo, "scoped value of foo"; bar, "scoped value of bar" ]
-           ~f:(fun () ->
-             print_env ();
-             [%expect
-               {|
+      let%bind () =
+        with_env_async
+          [ foo, "scoped value of foo"; bar, "scoped value of bar" ]
+          ~f:(fun () ->
+            print_env ();
+            [%expect
+              {|
                 ((EXPECT_TEST_FOO ("scoped value of foo"))
                  (EXPECT_TEST_BAR ("scoped value of bar"))
                  (EXPECT_TEST_BAZ ("old value of baz"))) |}];
-             Unix.putenv ~key:foo ~data:"temporary value of foo";
-             Unix.putenv ~key:baz ~data:"new value of baz";
-             print_env ();
-             [%expect
-               {|
+            Unix.putenv ~key:foo ~data:"temporary value of foo";
+            Unix.putenv ~key:baz ~data:"new value of baz";
+            print_env ();
+            [%expect
+              {|
                 ((EXPECT_TEST_FOO ("temporary value of foo"))
                  (EXPECT_TEST_BAR ("scoped value of bar"))
                  (EXPECT_TEST_BAZ ("new value of baz"))) |}];
-             return ())
-       in
-       print_env ();
-       [%expect
-         {|
+            return ())
+      in
+      print_env ();
+      [%expect
+        {|
          ((EXPECT_TEST_FOO ())
           (EXPECT_TEST_BAR ("old value of bar"))
           (EXPECT_TEST_BAZ ("new value of baz"))) |}];
-       return ())
+      return ())
 ;;
 
 let%expect_test "[with_env] with raising f" =
@@ -64,19 +64,19 @@ let%expect_test "[with_env] with raising f" =
       Unix.unsetenv foo;
       return ())
     (fun () ->
-       print_env ();
-       [%expect {| ((EXPECT_TEST_FOO ())) |}];
-       let%bind () =
-         require_does_raise_async [%here] (fun () ->
-           with_env_async
-             [ foo, "scoped value of foo" ]
-             ~f:(fun () ->
-               print_env ();
-               [%expect {| ((EXPECT_TEST_FOO ("scoped value of foo"))) |}];
-               failwith "error"))
-       in
-       [%expect {| (Failure error) |}];
-       print_env ();
-       [%expect {| ((EXPECT_TEST_FOO ())) |}];
-       return ())
+      print_env ();
+      [%expect {| ((EXPECT_TEST_FOO ())) |}];
+      let%bind () =
+        require_does_raise_async [%here] (fun () ->
+          with_env_async
+            [ foo, "scoped value of foo" ]
+            ~f:(fun () ->
+              print_env ();
+              [%expect {| ((EXPECT_TEST_FOO ("scoped value of foo"))) |}];
+              failwith "error"))
+      in
+      [%expect {| (Failure error) |}];
+      print_env ();
+      [%expect {| ((EXPECT_TEST_FOO ())) |}];
+      return ())
 ;;

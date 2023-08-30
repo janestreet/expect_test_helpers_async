@@ -29,11 +29,7 @@ let with_cd_into_temp_dir f =
   with_temp_dir (fun dir ->
     let%bind cwd = Unix.getcwd () in
     let%bind () = Unix.chdir dir in
-    Monitor.protect
-      ~run:`Schedule
-      ~rest:`Log
-      f
-      ~finally:(fun () -> Unix.chdir cwd))
+    Monitor.protect ~run:`Schedule ~rest:`Log f ~finally:(fun () -> Unix.chdir cwd))
 ;;
 
 let%expect_test "run, with working dir" =
@@ -232,7 +228,6 @@ let%expect_test "system, without backtraces" =
       "An exception appeared!" |}];
   return ()
 ;;
-
 
 let%expect_test "run, without backtraces" =
   let%bind () = run ~enable_ocaml_backtraces:false raises_exe [] in
