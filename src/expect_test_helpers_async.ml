@@ -225,7 +225,7 @@ let tty_log =
           active when [create] actually gets called, so we send the exn to the main
           monitor instead.
 
-          This code is copied from the implementation of {!Async.Log.Make_global.log}. *)
+          This code is copied from the implementation of {!Async.Log.Global.Make.log}. *)
        ~on_error:
          (`Call
            (fun e ->
