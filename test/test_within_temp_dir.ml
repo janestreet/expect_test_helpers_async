@@ -54,7 +54,8 @@ let%expect_test "[within_temp_dir] setup" =
   let%bind () = test [ "/usr/share/dict/words", `In_temp_as, "dictionary" ] in
   [%expect {|
     .
-    `-- dictionary |}];
+    `-- dictionary
+    |}];
   (* path links only *)
   let%bind () =
     test [ "/bin/true", `In_path_as, "true"; "/bin/false", `In_path_as, "false" ]
@@ -65,7 +66,8 @@ let%expect_test "[within_temp_dir] setup" =
     .
     `-- bin
         |-- false
-        `-- true |}];
+        `-- true
+    |}];
   (* temp and path links *)
   let%bind () =
     test
@@ -81,7 +83,8 @@ let%expect_test "[within_temp_dir] setup" =
     |-- bin
     |   |-- false
     |   `-- true
-    `-- dictionary |}];
+    `-- dictionary
+    |}];
   return ()
 ;;
 

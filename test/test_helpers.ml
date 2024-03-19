@@ -6,8 +6,7 @@ let raises_exe = "bin/raises.exe"
 
 let%expect_test "[~hide_positions:true] with a [Time.t]" =
   print_s ~hide_positions:true [%message (Time.epoch : Time.t)];
-  [%expect {|
-    (Time.epoch (1969-12-31 19:00:00.000000-05:00)) |}];
+  [%expect {| (Time.epoch (1969-12-31 19:00:00.000000-05:00)) |}];
   return ()
 ;;
 
@@ -21,7 +20,8 @@ let%expect_test "run, with print_cmdline:true" =
   let%bind () = run ~print_cmdline:true "echo" [ "foo" ] in
   [%expect {|
     (run (cmdline (echo foo)))
-    foo |}];
+    foo
+    |}];
   return ()
 ;;
 
@@ -46,15 +46,13 @@ let%expect_test "run, with working dir" =
 let%expect_test "run, with no expansion" =
   with_cd_into_temp_dir (fun () ->
     let%bind () = run "echo" [ "~" ] in
-    [%expect {|
-      ~ |}];
+    [%expect {| ~ |}];
     return ())
 ;;
 
 let%expect_test "run, with stdin" =
   let%bind () = run "cat" [ "-" ] ~stdin:"foo $PATH" in
-  [%expect {|
-    foo $PATH |}];
+  [%expect {| foo $PATH |}];
   return ()
 ;;
 
@@ -62,7 +60,8 @@ let%expect_test "run, with stdin and print_cmdline:true" =
   let%bind () = run ~print_cmdline:true "cat" [ "-" ] ~stdin:"foo" in
   [%expect {|
     (run (cmdline (cat -)) (stdin foo))
-    foo |}];
+    foo
+    |}];
   return ()
 ;;
 
@@ -73,7 +72,8 @@ let%expect_test "run, with stderr and non-zero exit" =
       {|
       ("Unclean exit" (Exit_non_zero 1))
       --- STDERR ---
-      cat: ./i-hope-this-does-not-exist: No such file or directory |}];
+      cat: ./i-hope-this-does-not-exist: No such file or directory
+      |}];
     return ())
 ;;
 
@@ -88,10 +88,10 @@ let%expect_test "run, with print_stdout/print_stderr overrides" =
       {|
       ("Unclean exit" (Exit_non_zero 1))
       --- STDERR ---
-      cat: ./i-hope-this-does-not-exist: No such file or directory |}];
+      cat: ./i-hope-this-does-not-exist: No such file or directory
+      |}];
     let%bind () = run "cat" [ "./i-hope-this-does-not-exist" ] ~print_stderr:Never in
-    [%expect {|
-      ("Unclean exit" (Exit_non_zero 1)) |}];
+    [%expect {| ("Unclean exit" (Exit_non_zero 1)) |}];
     return ())
 ;;
 
@@ -107,7 +107,8 @@ let%expect_test "run, with bad exec" =
           Unix.Unix_error
           "No such file or directory"
           Core_unix.create_process
-          "((prog ./i-hope-this-does-not-exist) (args ()) (env (Extend ((OCAMLRUNPARAM b=0)))))"))) |}];
+          "((prog ./i-hope-this-does-not-exist) (args ()) (env (Extend ((OCAMLRUNPARAM b=0)))))")))
+      |}];
     return ())
 ;;
 
@@ -115,8 +116,7 @@ let%expect_test "[run ~hide_positions:true]" =
   let%bind () =
     run ~hide_positions:true "echo" [ [%message [%here]] |> Sexp.to_string ]
   in
-  [%expect {|
-    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}];
+  [%expect {| lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}];
   return ()
 ;;
 
@@ -129,8 +129,7 @@ let%expect_test "run, with postprocess" =
       "echo"
       [ [%message [%here]] |> Sexp.to_string ]
   in
-  [%expect {|
-    lib/expect_foo_helpers/async/foo/foo_helpers.ml:LINE:COL |}];
+  [%expect {| lib/expect_foo_helpers/async/foo/foo_helpers.ml:LINE:COL |}];
   return ()
 ;;
 
@@ -139,7 +138,8 @@ let%expect_test "system" =
   [%expect {|
     2
     --- STDERR ---
-    2 |}];
+    2
+    |}];
   return ()
 ;;
 
@@ -150,14 +150,14 @@ let%expect_test "system, with cmdline" =
     (run (cmdline (/bin/bash -c " echo $((1 + 1)) | tee /dev/stderr ")))
     2
     --- STDERR ---
-    2 |}];
+    2
+    |}];
   return ()
 ;;
 
 let%expect_test "system, with non-zero exit" =
   let%bind () = system {| kill $$ |} in
-  [%expect {|
-    ("Unclean exit" (Signal sigterm)) |}];
+  [%expect {| ("Unclean exit" (Signal sigterm)) |}];
   return ()
 ;;
 
@@ -176,14 +176,14 @@ let%expect_test "system, with multi-line command" =
     7
     8
     9
-    10 |}];
+    10
+    |}];
   return ()
 ;;
 
 let%expect_test "system, with stdin" =
   let%bind () = system {| cat - |} ~stdin:"foo $PATH" in
-  [%expect {|
-    foo $PATH |}];
+  [%expect {| foo $PATH |}];
   return ()
 ;;
 
@@ -194,7 +194,8 @@ let%expect_test "system, with non-existent command" =
       {|
       ("Unclean exit" (Exit_non_zero 127))
       --- STDERR ---
-      /bin/bash: ./i-hope-this-does-not-exist: No such file or directory |}];
+      /bin/bash: ./i-hope-this-does-not-exist: No such file or directory
+      |}];
     return ())
 ;;
 
@@ -213,7 +214,8 @@ let%expect_test "[system ~hide_positions:true]" =
   [%expect
     {|
     --- STDERR ---
-    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL |}];
+    lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL
+    |}];
   return ()
 ;;
 
@@ -225,7 +227,8 @@ let%expect_test "system, without backtraces" =
     --- STDERR ---
     Uncaught exception:
 
-      "An exception appeared!" |}];
+      "An exception appeared!"
+    |}];
   return ()
 ;;
 
@@ -237,7 +240,8 @@ let%expect_test "run, without backtraces" =
     --- STDERR ---
     Uncaught exception:
 
-      "An exception appeared!" |}];
+      "An exception appeared!"
+    |}];
   return ()
 ;;
 
@@ -245,8 +249,7 @@ let%expect_test "run, without backtraces" =
 
 let%expect_test "[show_raise_async], no exception, ignores return value" =
   let%bind () = show_raise_async ~hide_positions:true (fun () -> Deferred.return 1) in
-  [%expect {|
-    "did not raise" |}];
+  [%expect {| "did not raise" |}];
   return ()
 ;;
 
@@ -254,8 +257,7 @@ let%expect_test "[show_raise_async], raises hiding positions" =
   let%bind () =
     show_raise_async ~hide_positions:true (fun () -> raise_s [%message [%here]])
   in
-  [%expect {|
-    (raised lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL) |}];
+  [%expect {| (raised lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL) |}];
   return ()
 ;;
 
@@ -268,8 +270,7 @@ let%expect_test "[show_raise_async] with a deep stack" =
       r + 1)
   in
   let%bind () = show_raise_async (fun () -> loop 5) in
-  [%expect {|
-    (raised (Failure raising)) |}];
+  [%expect {| (raised (Failure raising)) |}];
   return ()
 ;;
 
@@ -281,12 +282,10 @@ let%expect_test "[show_raise_async], raise after return" =
         Exn.raise_without_backtrace (Failure "raise after return"));
       Deferred.unit)
   in
-  [%expect {|
-    "did not raise" |}];
+  [%expect {| "did not raise" |}];
   Ivar.fill_exn returned ();
   let%bind () = Scheduler.yield () in
-  [%expect {|
-    ("Raised after return" (Failure "raise after return")) |}];
+  [%expect {| ("Raised after return" (Failure "raise after return")) |}];
   return ()
 ;;
 
@@ -304,7 +303,8 @@ let%expect_test "[require_does_not_raise_async], raises" =
   [%expect
     {|
     (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
-    ("unexpectedly raised" KABOOM) |}];
+    ("unexpectedly raised" KABOOM)
+    |}];
   return ()
 ;;
 
@@ -321,7 +321,8 @@ let%expect_test "[require_does_not_raise_async], raise after return" =
   [%expect
     {|
     (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
-    ("Raised after return" KABOOM) |}];
+    ("Raised after return" KABOOM)
+    |}];
   return ()
 ;;
 
@@ -332,7 +333,8 @@ let%expect_test "[require_does_raise_async], no raise" =
   [%expect
     {|
     (* require-failed: lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL. *)
-    "did not raise" |}];
+    "did not raise"
+    |}];
   return ()
 ;;
 
@@ -340,8 +342,7 @@ let%expect_test "[require_does_raise_async], raises" =
   let%bind () =
     require_does_raise_async [%here] (fun () -> raise_s [%message "KABOOM"])
   in
-  [%expect {|
-    KABOOM |}];
+  [%expect {| KABOOM |}];
   return ()
 ;;
 
@@ -352,15 +353,15 @@ let%expect_test "[require_does_raise_async], raise after return" =
       upon (Ivar.read returned) (fun () -> raise_s [%message "also KAPOW"]);
       raise_s [%message "KABOOM"])
   in
-  [%expect {|
-    KABOOM |}];
+  [%expect {| KABOOM |}];
   Ivar.fill_exn returned ();
   let%bind () = Scheduler.yield () in
   [%expect
     {|
     ("Raised after return"
      lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL
-     "also KAPOW") |}];
+     "also KAPOW")
+    |}];
   return ()
 ;;
 
@@ -394,18 +395,19 @@ let%expect_test "with_robust_global_log_output" =
     let%bind () = Log.Global.flushed () in
     [%expect
       {|
-    ("Task error after SPAN." (
-      errors ((
-        (rpc_error (
-          Uncaught_exn (
-            (location "server-side rpc computation")
-            (exn (
-              monitor.ml.Error
-              ("Fake Failure" (message "Deliberate failure after SPAN"))
-              ("ELIDED BACKTRACE"))))))
-        (connection_description ("Client connected via TCP" "HOST PORT"))
-        (rpc_tag     rpc_parallel_plain_1)
-        (rpc_version 0))))) |}];
+      ("Task error after SPAN." (
+        errors ((
+          (rpc_error (
+            Uncaught_exn (
+              (location "server-side rpc computation")
+              (exn (
+                monitor.ml.Error
+                ("Fake Failure" (message "Deliberate failure after SPAN"))
+                ("ELIDED BACKTRACE"))))))
+          (connection_description ("Client connected via TCP" "HOST PORT"))
+          (rpc_tag     rpc_parallel_plain_1)
+          (rpc_version 0)))))
+      |}];
     return ())
 ;;
 

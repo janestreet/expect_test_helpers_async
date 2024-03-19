@@ -26,7 +26,8 @@ let%expect_test "[with_env]" =
         {|
          ((EXPECT_TEST_FOO ())
           (EXPECT_TEST_BAR ("old value of bar"))
-          (EXPECT_TEST_BAZ ("old value of baz"))) |}];
+          (EXPECT_TEST_BAZ ("old value of baz")))
+         |}];
       let%bind () =
         with_env_async
           [ foo, "scoped value of foo"; bar, "scoped value of bar" ]
@@ -34,17 +35,19 @@ let%expect_test "[with_env]" =
             print_env ();
             [%expect
               {|
-                ((EXPECT_TEST_FOO ("scoped value of foo"))
-                 (EXPECT_TEST_BAR ("scoped value of bar"))
-                 (EXPECT_TEST_BAZ ("old value of baz"))) |}];
+               ((EXPECT_TEST_FOO ("scoped value of foo"))
+                (EXPECT_TEST_BAR ("scoped value of bar"))
+                (EXPECT_TEST_BAZ ("old value of baz")))
+               |}];
             Unix.putenv ~key:foo ~data:"temporary value of foo";
             Unix.putenv ~key:baz ~data:"new value of baz";
             print_env ();
             [%expect
               {|
-                ((EXPECT_TEST_FOO ("temporary value of foo"))
-                 (EXPECT_TEST_BAR ("scoped value of bar"))
-                 (EXPECT_TEST_BAZ ("new value of baz"))) |}];
+               ((EXPECT_TEST_FOO ("temporary value of foo"))
+                (EXPECT_TEST_BAR ("scoped value of bar"))
+                (EXPECT_TEST_BAZ ("new value of baz")))
+               |}];
             return ())
       in
       print_env ();
@@ -52,7 +55,8 @@ let%expect_test "[with_env]" =
         {|
          ((EXPECT_TEST_FOO ())
           (EXPECT_TEST_BAR ("old value of bar"))
-          (EXPECT_TEST_BAZ ("new value of baz"))) |}];
+          (EXPECT_TEST_BAZ ("new value of baz")))
+         |}];
       return ())
 ;;
 

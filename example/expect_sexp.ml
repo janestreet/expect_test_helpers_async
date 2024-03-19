@@ -26,7 +26,7 @@ let%expect_test "sexp command" =
       {|
       ((This (is an s-expression) ((s a) (b c) (d e)))
        (a b c d e f g h i j k l m n o p q r s t u v w x y z))
-    |}];
+      |}];
     (* We use [system] here because we want to do some piping, which is awkward
        otherwise *)
     let%bind () = system (sprintf "cat %s | %s pp" sexp_file sexp) in
@@ -38,19 +38,13 @@ let%expect_test "sexp command" =
           (b c)
           (d e)))
        (a b c d e f g h i j k l m n o p q r s t u v w x y z))
-    |}];
+      |}];
     let%bind () = system (sprintf "cat %s | %s print -machine" sexp_file sexp) in
     [%expect
-      {|
-      ((This(is an s-expression)((s a)(b c)(d e)))(a b c d e f g h i j k l m n o p q r s t u v w x y z))
-    |}];
+      {| ((This(is an s-expression)((s a)(b c)(d e)))(a b c d e f g h i j k l m n o p q r s t u v w x y z)) |}];
     show_raise (fun () -> raise_s [%message "foo" 13]);
-    [%expect {|
-      (raised (foo 13))
-    |}];
+    [%expect {| (raised (foo 13)) |}];
     show_raise ignore;
-    [%expect {|
-      "did not raise"
-    |}];
+    [%expect {| "did not raise" |}];
     return ())
 ;;

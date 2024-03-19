@@ -9,8 +9,9 @@ let%expect_test "without an [%expect]" =
   failwith "foo"
   [@@expect.uncaught_exn
     {|
-(monitor.ml.Error (Failure foo)
-  ("<backtrace elided in test>" "Caught by monitor block_on_async")) |}]
+  (monitor.ml.Error (Failure foo)
+    ("<backtrace elided in test>" "Caught by monitor block_on_async"))
+  |}]
 ;;
 
 let%expect_test "with an [%expect]" =
@@ -20,6 +21,7 @@ let%expect_test "with an [%expect]" =
   return ()
   [@@expect.uncaught_exn
     {|
-(monitor.ml.Error (Failure foo)
-  ("<backtrace elided in test>" "Caught by monitor block_on_async")) |}]
+  (monitor.ml.Error (Failure foo)
+    ("<backtrace elided in test>" "Caught by monitor block_on_async"))
+  |}]
 ;;

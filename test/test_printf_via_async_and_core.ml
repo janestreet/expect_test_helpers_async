@@ -7,7 +7,8 @@ let%expect_test "{Core,Async}.printf" =
   Async.printf "Async.printf\n";
   [%expect {|
     Core.printf
-    Async.printf |}];
+    Async.printf
+    |}];
   return ()
 ;;
 
@@ -16,6 +17,7 @@ let%expect_test "{Async,Core}.printf" =
   Core.printf "Core.printf\n";
   [%expect {|
     Async.printf
-    Core.printf |}];
+    Core.printf
+    |}];
   return ()
 ;;

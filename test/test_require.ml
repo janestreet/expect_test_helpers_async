@@ -4,8 +4,7 @@ open! Import
 
 let%expect_test "[require]" =
   require [%here] true;
-  [%expect {|
-    |}];
+  [%expect {| |}];
   require [%here] false ~cr:CR_someday;
   [%expect {|
     |}];
@@ -17,6 +16,7 @@ let%expect_test "[require]" =
   [%expect
     {|
     (* require-failed: lib/expect_test_helpers/async/test/test_require.ml:LINE:COL. *)
-    additional-info |}];
+    additional-info
+    |}];
   return ()
 ;;
