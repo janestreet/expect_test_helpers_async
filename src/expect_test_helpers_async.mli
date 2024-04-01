@@ -88,6 +88,7 @@ val system
     rest of the errors are printed to stdout. *)
 val show_raise_async
   :  ?hide_positions:bool (** default is [false] *)
+  -> ?show_backtrace:bool (** default is [false] *)
   -> (unit -> _ Deferred.t)
   -> unit Deferred.t
 
