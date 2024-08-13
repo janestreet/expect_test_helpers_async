@@ -18,7 +18,8 @@ let%expect_test "run" =
 
 let%expect_test "run, with print_cmdline:true" =
   let%bind () = run ~print_cmdline:true "echo" [ "foo" ] in
-  [%expect {|
+  [%expect
+    {|
     (run (cmdline (echo foo)))
     foo
     |}];
@@ -58,7 +59,8 @@ let%expect_test "run, with stdin" =
 
 let%expect_test "run, with stdin and print_cmdline:true" =
   let%bind () = run ~print_cmdline:true "cat" [ "-" ] ~stdin:"foo" in
-  [%expect {|
+  [%expect
+    {|
     (run (cmdline (cat -)) (stdin foo))
     foo
     |}];
@@ -135,7 +137,8 @@ let%expect_test "run, with postprocess" =
 
 let%expect_test "system" =
   let%bind () = system {| echo $((1 + 1)) | tee /dev/stderr |} in
-  [%expect {|
+  [%expect
+    {|
     2
     --- STDERR ---
     2
@@ -162,11 +165,15 @@ let%expect_test "system, with non-zero exit" =
 ;;
 
 let%expect_test "system, with multi-line command" =
-  let%bind () = system {|
+  let%bind () =
+    system
+      {|
       for i in $(seq 1 10); do
         echo $i
-      done; |} in
-  [%expect {|
+      done; |}
+  in
+  [%expect
+    {|
     1
     2
     3
@@ -290,15 +297,14 @@ let%expect_test "[show_raise_async], raise after return" =
 ;;
 
 let%expect_test "[require_does_not_raise_async], no raise" =
-  let%bind () = require_does_not_raise_async [%here] (fun () -> return ()) in
+  let%bind () = require_does_not_raise_async (fun () -> return ()) in
   [%expect {| |}];
   return ()
 ;;
 
 let%expect_test "[require_does_not_raise_async], raises" =
   let%bind () =
-    require_does_not_raise_async [%here] ~cr:Comment (fun () ->
-      raise_s [%message "KABOOM"])
+    require_does_not_raise_async ~cr:Comment (fun () -> raise_s [%message "KABOOM"])
   in
   [%expect
     {|
@@ -311,7 +317,7 @@ let%expect_test "[require_does_not_raise_async], raises" =
 let%expect_test "[require_does_not_raise_async], raise after return" =
   let returned = Ivar.create () in
   let%bind () =
-    require_does_not_raise_async [%here] ~cr:Comment (fun () ->
+    require_does_not_raise_async ~cr:Comment (fun () ->
       upon (Ivar.read returned) (fun () -> raise_s [%message "KABOOM"]);
       return ())
   in
@@ -328,7 +334,7 @@ let%expect_test "[require_does_not_raise_async], raise after return" =
 
 let%expect_test "[require_does_raise_async], no raise" =
   let%bind () =
-    require_does_raise_async [%here] ~cr:Comment (fun () -> return `ignore_return_value)
+    require_does_raise_async ~cr:Comment (fun () -> return `ignore_return_value)
   in
   [%expect
     {|
@@ -339,9 +345,7 @@ let%expect_test "[require_does_raise_async], no raise" =
 ;;
 
 let%expect_test "[require_does_raise_async], raises" =
-  let%bind () =
-    require_does_raise_async [%here] (fun () -> raise_s [%message "KABOOM"])
-  in
+  let%bind () = require_does_raise_async (fun () -> raise_s [%message "KABOOM"]) in
   [%expect {| KABOOM |}];
   return ()
 ;;
@@ -349,7 +353,7 @@ let%expect_test "[require_does_raise_async], raises" =
 let%expect_test "[require_does_raise_async], raise after return" =
   let returned = Ivar.create () in
   let%bind () =
-    require_does_raise_async [%here] ~cr:Comment (fun () ->
+    require_does_raise_async ~cr:Comment (fun () ->
       upon (Ivar.read returned) (fun () -> raise_s [%message "also KAPOW"]);
       raise_s [%message "KABOOM"])
   in
@@ -361,6 +365,40 @@ let%expect_test "[require_does_raise_async], raise after return" =
     ("Raised after return"
      lib/expect_test_helpers/async/test/test_helpers.ml:LINE:COL
      "also KAPOW")
+    |}];
+  return ()
+;;
+
+let%expect_test "[require_does_raise_async], backtrace" =
+  let test show_backtrace =
+    let%map () =
+      require_does_raise_async ~show_backtrace (fun () ->
+        Monitor.try_with ~extract_exn:false (fun () ->
+          (* raise an exception *)
+          try raise_s [%message "oops"] with
+          | exn ->
+            (* annotate and re-raise with backtrace *)
+            let backtrace = Backtrace.Exn.most_recent () in
+            raise_s [%message "raising" (exn : exn) (backtrace : Backtrace.t)])
+        >>| function
+        | Ok (_ : Nothing.t) -> .
+        | Error exn ->
+          (* catch and re-raise with monitor backtrace, round-tripped through sexp so that
+             [extract_exn] doesn't remove the monitor backtrace *)
+          raise_s (sexp_of_exn exn))
+    in
+    (* placeholders instead of actual backtraces *)
+    expect_test_output () |> Sexp.of_string |> remove_backtraces |> print_s
+  in
+  let%bind () = test false in
+  [%expect {| (monitor.ml.Error (raising (exn oops) (backtrace ()))) |}];
+  let%bind () = test true in
+  [%expect
+    {|
+    ((monitor.ml.Error
+       (raising (exn oops) (backtrace ("ELIDED BACKTRACE")))
+       ("ELIDED BACKTRACE"))
+     (backtrace ("ELIDED BACKTRACE")))
     |}];
   return ()
 ;;
@@ -433,7 +471,11 @@ let%expect_test "[remove_backtraces] with no interesting backtrace lines except 
   let%bind exn = wrap_exn (Error.to_exn (Error.of_string "my-error")) in
   let sexp = [%sexp (exn : exn)] in
   print_s sexp;
-  [%expect {| (monitor.ml.Error my-error ("Caught by monitor my-monitor")) |}];
+  [%expect
+    {|
+    (monitor.ml.Error my-error (
+      "Caught by monitor my-monitor at file \"lib/expect_test_helpers/async/test/test_helpers.ml\", line LINE, characters C1-C2"))
+    |}];
   print_s (remove_backtraces sexp);
   [%expect {| (monitor.ml.Error my-error ("ELIDED BACKTRACE")) |}];
   return ()

@@ -5,7 +5,8 @@ open! Import
 let%expect_test "{Core,Async}.printf" =
   Core.printf "Core.printf\n";
   Async.printf "Async.printf\n";
-  [%expect {|
+  [%expect
+    {|
     Core.printf
     Async.printf
     |}];
@@ -15,7 +16,8 @@ let%expect_test "{Core,Async}.printf" =
 let%expect_test "{Async,Core}.printf" =
   Async.printf "Async.printf\n";
   Core.printf "Core.printf\n";
-  [%expect {|
+  [%expect
+    {|
     Async.printf
     Core.printf
     |}];

@@ -13,7 +13,6 @@ let%expect_test "[within_temp_dir `In_temp_as]" =
       (fun () ->
         let%bind foobar_contents = Reader.file_contents "foobar" in
         require
-          [%here]
           (jbuild_contents = foobar_contents)
           ~if_false_then_print_s:
             (lazy [%message "" (jbuild_contents : string) (foobar_contents : string)]);
@@ -52,7 +51,8 @@ let%expect_test "[within_temp_dir] setup" =
   [%expect {| . |}];
   (* temp links only *)
   let%bind () = test [ "/usr/share/dict/words", `In_temp_as, "dictionary" ] in
-  [%expect {|
+  [%expect
+    {|
     .
     `-- dictionary
     |}];
@@ -95,7 +95,6 @@ let%expect_test "[within_temp_dir ~in_dir]" =
     within_temp_dir (fun () ->
       let%bind cwd_within_temp = Sys.getcwd () in
       require
-        [%here]
         (Filename.dirname cwd_within_temp <> cwd)
         ~if_false_then_print_s:
           (lazy [%message "" (cwd : string) (cwd_within_temp : string)]);
@@ -107,7 +106,6 @@ let%expect_test "[within_temp_dir ~in_dir]" =
     within_temp_dir ~in_dir:cwd (fun () ->
       let%bind cwd_within_temp = Sys.getcwd () in
       require
-        [%here]
         (Filename.dirname cwd_within_temp = cwd)
         ~if_false_then_print_s:
           (lazy [%message "" (cwd : string) (cwd_within_temp : string)]);

@@ -98,7 +98,7 @@ val require_does_not_raise_async
   :  ?cr:CR.t (** default is [CR] *)
   -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
   -> ?show_backtrace:bool (** default is [false] *)
-  -> Source_code_position.t
+  -> ?here:Stdlib.Lexing.position
   -> (unit -> unit Deferred.t)
   -> unit Deferred.t
 
@@ -108,7 +108,7 @@ val require_does_raise_async
   :  ?cr:CR.t (** default is [CR] *)
   -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
   -> ?show_backtrace:bool (** default is [false] *)
-  -> Source_code_position.t
+  -> ?here:Stdlib.Lexing.position
   -> (unit -> _ Deferred.t)
   -> unit Deferred.t
 

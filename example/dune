@@ -1,5 +1,5 @@
 (library
  (name expect_test_helpers_async_example)
- (libraries expect_test_helpers_async expect_test_helpers_core)
+ (libraries async core expect_test_helpers_async expect_test_helpers_core)
  (preprocess
   (pps ppx_jane)))
