@@ -185,7 +185,7 @@ let require_does_not_raise_async
   ?cr
   ?hide_positions
   ?show_backtrace
-  ?(here = Stdlib.Lexing.dummy_pos)
+  ~(here : [%call_pos])
   f
   =
   let%map result =
@@ -200,7 +200,7 @@ let require_does_raise_async
   ?(cr = CR.CR)
   ?(hide_positions = CR.hide_unstable_output cr)
   ?(show_backtrace = false)
-  ?(here = Stdlib.Lexing.dummy_pos)
+  ~(here : [%call_pos])
   f
   =
   let%map result =
