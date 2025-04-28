@@ -166,6 +166,14 @@ let sets_temporarily_async and_values ~f =
 
 let set_temporarily_async r x ~f = sets_temporarily_async [ T (r, x) ] ~f
 
+let with_temporarily_async d x ~f =
+  let restore_to = Dynamic.get d in
+  Dynamic.set_root d x;
+  Monitor.protect f ~finally:(fun () ->
+    Dynamic.set_root d restore_to;
+    return ())
+;;
+
 let try_with f ~rest =
   let monitor = Monitor.create () in
   Monitor.detach_and_iter_errors monitor ~f:(fun exn -> rest (Monitor.extract_exn exn));
@@ -274,4 +282,15 @@ let with_robust_global_log_output ?(map_output = Fn.id) fn =
     (fun () ->
       Log.Global.set_output [ Log.For_testing.create_output ~map_output ];
       fn ())
+;;
+
+let with_sexp_round_floats f ~significant_digits =
+  let restore_to = Dynamic.get Sexplib0.Sexp_conv.default_string_of_float in
+  Dynamic.set_root
+    Sexplib0.Sexp_conv.default_string_of_float
+    (Portability_hacks.magic_portable__needs_base_and_core (fun v ->
+       Float.to_string (Float.round_significant ~significant_digits v)));
+  Monitor.protect f ~finally:(fun () ->
+    Dynamic.set_root Sexplib0.Sexp_conv.default_string_of_float restore_to;
+    Deferred.unit)
 ;;
