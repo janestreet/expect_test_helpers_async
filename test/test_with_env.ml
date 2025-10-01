@@ -14,13 +14,13 @@ let%expect_test "[with_env]" =
   let print_env () = print_env [ foo; bar; baz ] in
   Monitor.protect
     ~finally:(fun () ->
-      Unix.unsetenv foo;
-      Unix.unsetenv bar;
-      Unix.unsetenv baz;
+      (Unix.unsetenv [@ocaml.alert "-unsafe_multidomain"]) foo;
+      (Unix.unsetenv [@ocaml.alert "-unsafe_multidomain"]) bar;
+      (Unix.unsetenv [@ocaml.alert "-unsafe_multidomain"]) baz;
       return ())
     (fun () ->
-      Unix.putenv ~key:bar ~data:"old value of bar";
-      Unix.putenv ~key:baz ~data:"old value of baz";
+      (Unix.putenv [@ocaml.alert "-unsafe_multidomain"]) ~key:bar ~data:"old value of bar";
+      (Unix.putenv [@ocaml.alert "-unsafe_multidomain"]) ~key:baz ~data:"old value of baz";
       print_env ();
       [%expect
         {|
@@ -39,8 +39,12 @@ let%expect_test "[with_env]" =
                (EXPECT_TEST_BAR ("scoped value of bar"))
                (EXPECT_TEST_BAZ ("old value of baz")))
               |}];
-            Unix.putenv ~key:foo ~data:"temporary value of foo";
-            Unix.putenv ~key:baz ~data:"new value of baz";
+            (Unix.putenv [@ocaml.alert "-unsafe_multidomain"])
+              ~key:foo
+              ~data:"temporary value of foo";
+            (Unix.putenv [@ocaml.alert "-unsafe_multidomain"])
+              ~key:baz
+              ~data:"new value of baz";
             print_env ();
             [%expect
               {|
@@ -65,7 +69,7 @@ let%expect_test "[with_env] with raising f" =
   let print_env () = print_env [ foo ] in
   Monitor.protect
     ~finally:(fun () ->
-      Unix.unsetenv foo;
+      (Unix.unsetenv [@ocaml.alert "-unsafe_multidomain"]) foo;
       return ())
     (fun () ->
       print_env ();

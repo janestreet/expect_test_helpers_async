@@ -109,8 +109,8 @@ let with_env_async env ~f =
   let set_env =
     Map.iteri ~f:(fun ~key ~data ->
       match data with
-      | None -> Unix.unsetenv key
-      | Some data -> Unix.putenv ~key ~data)
+      | None -> (Unix.unsetenv [@ocaml.alert "-unsafe_multidomain"]) key
+      | Some data -> (Unix.putenv [@ocaml.alert "-unsafe_multidomain"]) ~key ~data)
   in
   set_env env;
   Monitor.protect f ~finally:(fun () ->
@@ -136,7 +136,9 @@ let within_temp_dir ?in_dir ?(links = []) f =
     let add_bin_to_path =
       Lazy_deferred.create (fun () ->
         let bin = temp_dir ^/ "bin" in
-        Unix.putenv ~key:path_var ~data:(String.concat ~sep:":" [ bin; old_path ]);
+        (Unix.putenv [@ocaml.alert "-unsafe_multidomain"])
+          ~key:path_var
+          ~data:(String.concat ~sep:":" [ bin; old_path ]);
         run "mkdir" [ bin ])
     in
     let%bind () =
@@ -152,7 +154,7 @@ let within_temp_dir ?in_dir ?(links = []) f =
     in
     let%bind () = Unix.chdir temp_dir in
     Monitor.protect ~run:`Schedule ~rest:`Log f ~finally:(fun () ->
-      Unix.putenv ~key:path_var ~data:old_path;
+      (Unix.putenv [@ocaml.alert "-unsafe_multidomain"]) ~key:path_var ~data:old_path;
       Unix.chdir cwd))
 ;;
 
@@ -172,6 +174,21 @@ let with_temporarily_async d x ~f =
   Monitor.protect f ~finally:(fun () ->
     Dynamic.set_root d restore_to;
     return ())
+;;
+
+let with_empty_expect_test_output_async ?(here = Stdlib.Lexing.dummy_pos) f =
+  let frame =
+    (Ppx_expect_runtime.For_external.push_output_exn [@alert "-ppx_expect_runtime"]) ~here
+  in
+  Monitor.protect f ~finally:(fun () ->
+    match
+      (Ppx_expect_runtime.For_external.pop_output_exn [@alert "-ppx_expect_runtime"])
+        ~here
+        frame
+    with
+    | Match -> return ()
+    | Mismatch ->
+      raise_s [%message "[with_empty_expect_test_output_async]: nesting mismatch"])
 ;;
 
 let try_with f ~rest =

@@ -50,6 +50,12 @@ val sets_temporarily_async
   -> f:(unit -> 'a Deferred.t)
   -> 'a Deferred.t
 
+(** Like [Expect_test_helpers_base.with_empty_expect_test_output], for async callbacks. *)
+val with_empty_expect_test_output_async
+  :  ?here:Stdlib.Lexing.position
+  -> (unit -> 'a Deferred.t)
+  -> 'a Deferred.t
+
 module Print_rule : sig
   type t =
     | Always
