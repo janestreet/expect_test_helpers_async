@@ -6,8 +6,8 @@ open! Async
 open! Import
 open Expect_test_helpers_core
 
-(** [with_temp_dir f] creates a temporary directory which is fed to [f].  The directory
-    is removed after [f] exits. *)
+(** [with_temp_dir f] creates a temporary directory which is fed to [f]. The directory is
+    removed after [f] exits. *)
 val with_temp_dir : ?in_dir:string -> (string -> 'a Deferred.t) -> 'a Deferred.t
 
 (** [within_temp_dir ?links f] creates a temporary directory, $T, and:
@@ -16,11 +16,11 @@ val with_temp_dir : ?in_dir:string -> (string -> 'a Deferred.t) -> 'a Deferred.t
     2. For each [file, `In_temp_as, name] in [links], links [file] as $T/[name].
     3. Adds $T/bin to the PATH environment variable if step 1 added any links.
 
-    It then [cd]s to $T and calls [f].  After [f] exits, it [cd]s back, removes the
+    It then [cd]s to $T and calls [f]. After [f] exits, it [cd]s back, removes the
     temporary directory, and restores the original PATH.
 
     [within_temp_dir] creates hard links to ensure that files remain available and
-    unchanged even if jenga starts to rebuild while the test is running.  If [file] and $T
+    unchanged even if jenga starts to rebuild while the test is running. If [file] and $T
     are not on the same file system, [within_temp_dir] copies the files instead of
     creating hard links. *)
 val within_temp_dir
@@ -29,17 +29,31 @@ val within_temp_dir
   -> (unit -> 'a Deferred.t)
   -> 'a Deferred.t
 
-(** [with_env] sets specified environment variables before calling [f].
-    After [f] exits, these variables are reset to their previous values. *)
+(** [with_env] sets specified environment variables before calling [f]. After [f] exits,
+    these variables are reset to their previous values. *)
 val with_env_async : (string * string) list -> f:(unit -> 'a Deferred.t) -> 'a Deferred.t
 
 (** Like [Ref.set_temporarily], but waits for a deferred function to finish. *)
 val set_temporarily_async : 'a ref -> 'a -> f:(unit -> 'b Deferred.t) -> 'b Deferred.t
 
+(** Like [Dynamic.with_temporarily], but waits for a deferred function to finish.
+
+    Uses [Dynamic.set_root] and [Dynamic.get], so if this is for some reason called from
+    within [Dynamic.with_temporarily], it will have confusing behavior. *)
+val with_temporarily_async
+  : ('a : value mod contended) 'b.
+  'a Dynamic.t -> 'a @ portable -> f:(unit -> 'b Deferred.t) -> 'b Deferred.t
+
 (** Like [Ref.sets_temporarily], but waits for a deferred function to finish. *)
 val sets_temporarily_async
   :  Ref.And_value.t list
   -> f:(unit -> 'a Deferred.t)
+  -> 'a Deferred.t
+
+(** Like [Expect_test_helpers_base.with_empty_expect_test_output], for async callbacks. *)
+val with_empty_expect_test_output_async
+  :  here:[%call_pos]
+  -> (unit -> 'a Deferred.t)
   -> 'a Deferred.t
 
 module Print_rule : sig
@@ -51,9 +65,9 @@ module Print_rule : sig
 end
 
 (** [run prog args] creates a child process that runs [prog], with arguments [args], its
-    environment extended with [extend_env] and its stdin coming from [stdin].  No
-    expansion or escaping is done to [args] or [stdin].  The child process's stdout and
-    stderr are captured separately for comparison. *)
+    environment extended with [extend_env] and its stdin coming from [stdin]. No expansion
+    or escaping is done to [args] or [stdin]. The child process's stdout and stderr are
+    captured separately for comparison. *)
 val run
   :  ?enable_ocaml_backtraces:bool (** default is [false] *)
   -> ?extend_env:(string * string) list (** default is [] *)
@@ -82,10 +96,10 @@ val system
   -> unit Deferred.t
 
 (** [show_raise_async ?hide_positions ?rest f] calls [f ()] and prints either the
-    exception raised by [f] or "did not raise".  [show_raise_async] ignores the result of
-    [f] so that one doesn't have to put an [ignore] inside [f].  [~hide_positions]
-    operates as in [print_s], to make output less fragile.  Once a result is returned, the
-    rest of the errors are printed to stdout. *)
+    exception raised by [f] or "did not raise". [show_raise_async] ignores the result of
+    [f] so that one doesn't have to put an [ignore] inside [f]. [~hide_positions] operates
+    as in [print_s], to make output less fragile. Once a result is returned, the rest of
+    the errors are printed to stdout. *)
 val show_raise_async
   :  ?hide_positions:bool (** default is [false] *)
   -> ?show_backtrace:bool (** default is [false] *)
@@ -115,11 +129,11 @@ val require_does_raise_async
 (** A log that goes to the test runner's controlling terminal, if it exists.
 
     This log's output is not captured by the expect test runner, and instead appears
-    immediately on the attached terminal[1].  This is especially useful when debugging
+    immediately on the attached terminal[1]. This is especially useful when debugging
     expect tests that time out.
 
     [1]: When tests are run by a build system, there may be no controlling terminal, in
-    which case the output of this log is silently discarded.  You would need to run
+    which case the output of this log is silently discarded. You would need to run
     [inline_test_runner] interactively to see output from this log. *)
 val tty_log : Log.t Lazy.t
 
@@ -135,3 +149,11 @@ val with_robust_global_log_output
   :  ?map_output:(string -> string)
   -> (unit -> unit Deferred.t)
   -> unit Deferred.t
+
+(** [with_sexp_round_floats] rounds floats when making sexp strings. The effect lasts
+    until the deferred returned by the passed function completes, after which the previous
+    behavior (full precision, by default) is restored. *)
+val with_sexp_round_floats
+  :  (unit -> 'a Deferred.t)
+  -> significant_digits:int
+  -> 'a Deferred.t

@@ -2,7 +2,7 @@ open! Core
 open! Async
 open! Import
 
-let () = Backtrace.elide := true
+let () = Dynamic.set_root Backtrace.elide true
 
 let%expect_test "without an [%expect]" =
   Printexc.record_backtrace false;
