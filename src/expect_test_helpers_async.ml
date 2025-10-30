@@ -81,6 +81,21 @@ let system ?enable_ocaml_backtraces ?hide_positions ?print_cmdline ?stdin cmd =
     [ "-c"; cmd ]
 ;;
 
+let cleanup_dir__best_effort dir =
+  (* there's various reasons why this might fail. Most commonly, it's because the
+     test [chmod]s one of the files so we can't remove it. We've also observed
+     apparent race conditions that give an error like
+
+        rm: cannot remove '/tmp/._expect_.tmp.7M0HDW_test.tmp/some/path: Directory not empty
+
+     [-f] already ignores many errors, and we also ignore the output and the
+     exit code. Worst case, because we're in /tmp anyway, it'll be cleaned up
+     later by the OS.
+  *)
+  match%map Process.run ~prog:"rm" ~args:[ "-rf"; dir ] () with
+  | Ok _ | Error _ -> ()
+;;
+
 let with_temp_dir ?in_dir f =
   let in_dir =
     match in_dir with
@@ -100,7 +115,7 @@ let with_temp_dir ?in_dir f =
       then (
         eprintf "OUTPUT LEFT IN %s\n" dir;
         return ())
-      else run "rm" [ "-rf"; dir ])
+      else cleanup_dir__best_effort dir)
 ;;
 
 let with_env_async env ~f =
