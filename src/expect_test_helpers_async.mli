@@ -99,9 +99,11 @@ val system
     exception raised by [f] or "did not raise". [show_raise_async] ignores the result of
     [f] so that one doesn't have to put an [ignore] inside [f]. [~hide_positions] operates
     as in [print_s], to make output less fragile. Once a result is returned, the rest of
-    the errors are printed to stdout. *)
+    the errors are printed to stdout. [~sanitize] is applied before hiding the positions,
+    and can be used to keep some unstable fields out of the error message. *)
 val show_raise_async
   :  ?hide_positions:bool (** default is [false] *)
+  -> ?sanitize:(Sexp.t -> Sexp.t) (** default is Fn.id *)
   -> ?show_backtrace:bool (** default is [false] *)
   -> (unit -> _ Deferred.t)
   -> unit Deferred.t
@@ -111,6 +113,7 @@ val show_raise_async
 val require_does_not_raise_async
   :  ?cr:CR.t (** default is [CR] *)
   -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
+  -> ?sanitize:(Sexp.t -> Sexp.t) (** default is Fn.id *)
   -> ?show_backtrace:bool (** default is [false] *)
   -> here:[%call_pos]
   -> (unit -> unit Deferred.t)
@@ -121,6 +124,7 @@ val require_does_not_raise_async
 val require_does_raise_async
   :  ?cr:CR.t (** default is [CR] *)
   -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
+  -> ?sanitize:(Sexp.t -> Sexp.t) (** default is Fn.id *)
   -> ?show_backtrace:bool (** default is [false] *)
   -> here:[%call_pos]
   -> (unit -> _ Deferred.t)
@@ -132,7 +136,7 @@ val require_does_raise_async
     immediately on the attached terminal[1]. This is especially useful when debugging
     expect tests that time out.
 
-    [1]: When tests are run by a build system, there may be no controlling terminal, in
+    [1] : When tests are run by a build system, there may be no controlling terminal, in
     which case the output of this log is silently discarded. You would need to run
     [inline_test_runner] interactively to see output from this log. *)
 val tty_log : Log.t Lazy.t

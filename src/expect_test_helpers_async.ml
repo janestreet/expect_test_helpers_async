@@ -82,15 +82,14 @@ let system ?enable_ocaml_backtraces ?hide_positions ?print_cmdline ?stdin cmd =
 ;;
 
 let cleanup_dir__best_effort dir =
-  (* there's various reasons why this might fail. Most commonly, it's because the
-     test [chmod]s one of the files so we can't remove it. We've also observed
-     apparent race conditions that give an error like
+  (* there's various reasons why this might fail. Most commonly, it's because the test
+     [chmod]s one of the files so we can't remove it. We've also observed apparent race
+     conditions that give an error like
 
-        rm: cannot remove '/tmp/._expect_.tmp.7M0HDW_test.tmp/some/path: Directory not empty
+     rm: cannot remove '/tmp/._expect_.tmp.7M0HDW_test.tmp/some/path: Directory not empty
 
-     [-f] already ignores many errors, and we also ignore the output and the
-     exit code. Worst case, because we're in /tmp anyway, it'll be cleaned up
-     later by the OS.
+     [-f] already ignores many errors, and we also ignore the output and the exit code.
+     Worst case, because we're in /tmp anyway, it'll be cleaned up later by the OS.
   *)
   match%map Process.run ~prog:"rm" ~args:[ "-rf"; dir ] () with
   | Ok _ | Error _ -> ()
@@ -213,32 +212,46 @@ let try_with f ~rest =
     Monitor.try_with ~run:`Schedule ~extract_exn:true ~rest:`Raise f)
 ;;
 
-let show_raise_async (type a) ?hide_positions ?show_backtrace (f : unit -> a Deferred.t) =
+let show_raise_async
+  (type a)
+  ?hide_positions
+  ?(sanitize = Fn.id)
+  ?show_backtrace
+  (f : unit -> a Deferred.t)
+  =
   let%map result =
     try_with f ~rest:(fun exn ->
-      print_s ?hide_positions [%message "Raised after return" ~_:(exn : exn)])
+      let exn : Sexp.t = sanitize [%sexp (exn : exn)] in
+      print_s ?hide_positions [%message "Raised after return" ~_:(exn : Sexp.t)])
   in
-  show_raise ?hide_positions ?show_backtrace (fun () -> Result.ok_exn result)
+  show_raise ?hide_positions ~sanitize ?show_backtrace (fun () -> Result.ok_exn result)
 ;;
 
 let require_does_not_raise_async
   ?cr
   ?hide_positions
+  ?(sanitize = Fn.id)
   ?show_backtrace
   ~(here : [%call_pos])
   f
   =
   let%map result =
     try_with f ~rest:(fun exn ->
-      print_cr ~here ?cr ?hide_positions [%message "Raised after return" ~_:(exn : exn)])
+      let exn : Sexp.t = sanitize [%sexp (exn : exn)] in
+      print_cr
+        ~here
+        ?cr
+        ?hide_positions
+        [%message "Raised after return" ~_:(exn : Sexp.t)])
   in
-  require_does_not_raise ?cr ?hide_positions ?show_backtrace ~here (fun () ->
+  require_does_not_raise ?cr ?hide_positions ~sanitize ?show_backtrace ~here (fun () ->
     Result.ok_exn result)
 ;;
 
 let require_does_raise_async
   ?(cr = CR.CR)
   ?(hide_positions = CR.hide_unstable_output cr)
+  ?(sanitize = Fn.id)
   ?(show_backtrace = false)
   ~(here : [%call_pos])
   f
@@ -252,14 +265,14 @@ let require_does_raise_async
           Backtrace.Exn.set_recording backtrace_recording;
           return ()))
       ~rest:(fun exn ->
-        (* It's not clear what do if we get exceptions after the deferred is
-           returned... Just printing out "Raised after return" for now. *)
+        (* It's not clear what do if we get exceptions after the deferred is returned...
+           Just printing out "Raised after return" for now. *)
         print_s
           ~hide_positions
           [%message
             "Raised after return" ~_:(here : Source_code_position.t) ~_:(exn : exn)])
   in
-  require_does_raise ~cr ~hide_positions ~show_backtrace ~here (fun () ->
+  require_does_raise ~cr ~hide_positions ~sanitize ~show_backtrace ~here (fun () ->
     Result.ok_exn result)
 ;;
 
@@ -272,14 +285,14 @@ let tty_log =
           | oc -> [ Log.Output.writer `Text (Writer.of_out_channel oc Char) ]
           | exception _ -> [])
          (* We can explicitly use the wall clock because this output is designed to bypass
-          the expect test output capture mechanism. *)
+            the expect test output capture mechanism. *)
        ~time_source:(Synchronous_time_source.wall_clock ())
-         (* [`Raise] causes background errors to be sent the monitor in effect when [create]
-          is called.  Since this value is lazy, it is not predictable which monitor is
-          active when [create] actually gets called, so we send the exn to the main
-          monitor instead.
+         (* [`Raise] causes background errors to be sent the monitor in effect when
+            [create] is called. Since this value is lazy, it is not predictable which
+            monitor is active when [create] actually gets called, so we send the exn to
+            the main monitor instead.
 
-          This code is copied from the implementation of {!Async.Log.Global.Make.log}. *)
+            This code is copied from the implementation of {!Async.Log.Global.Make.log}. *)
        ~on_error:
          (`Call
            (fun e ->
