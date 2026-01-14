@@ -26,6 +26,7 @@ val with_temp_dir : ?in_dir:string -> (string -> 'a Deferred.t) -> 'a Deferred.t
 val within_temp_dir
   :  ?in_dir:string
   -> ?links:(string * [ `In_path_as | `In_temp_as ] * string) list
+  -> ?sexp_style:Sexp_style.t
   -> (unit -> 'a Deferred.t)
   -> 'a Deferred.t
 
@@ -76,6 +77,7 @@ val run
   -> ?print_cmdline:bool (** default is [false] *)
   -> ?print_stdout:Print_rule.t (** default is [Always] *)
   -> ?print_stderr:Print_rule.t (** default is [Always] *)
+  -> ?sexp_style:Sexp_style.t (** default is [Dynamic.get sexp_style] *)
   -> ?stdin:string
   -> ?working_dir:string
   -> string
@@ -91,6 +93,7 @@ val system
   :  ?enable_ocaml_backtraces:bool (** default is [true] *)
   -> ?hide_positions:bool (** default is [false] *)
   -> ?print_cmdline:bool (** default is [false] *)
+  -> ?sexp_style:Sexp_style.t (** default is [Dynamic.get sexp_style] *)
   -> ?stdin:string
   -> string
   -> unit Deferred.t
@@ -99,9 +102,12 @@ val system
     exception raised by [f] or "did not raise". [show_raise_async] ignores the result of
     [f] so that one doesn't have to put an [ignore] inside [f]. [~hide_positions] operates
     as in [print_s], to make output less fragile. Once a result is returned, the rest of
-    the errors are printed to stdout. *)
+    the errors are printed to stdout. [~sanitize] is applied before hiding the positions,
+    and can be used to keep some unstable fields out of the error message. *)
 val show_raise_async
   :  ?hide_positions:bool (** default is [false] *)
+  -> ?sanitize:(Sexp.t -> Sexp.t) (** default is Fn.id *)
+  -> ?sexp_style:Sexp_style.t (** default is [Dynamic.get sexp_style] *)
   -> ?show_backtrace:bool (** default is [false] *)
   -> (unit -> _ Deferred.t)
   -> unit Deferred.t
@@ -111,6 +117,8 @@ val show_raise_async
 val require_does_not_raise_async
   :  ?cr:CR.t (** default is [CR] *)
   -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
+  -> ?sanitize:(Sexp.t -> Sexp.t) (** default is Fn.id *)
+  -> ?sexp_style:Sexp_style.t (** default is [Dynamic.get sexp_style] *)
   -> ?show_backtrace:bool (** default is [false] *)
   -> ?here:Stdlib.Lexing.position
   -> (unit -> unit Deferred.t)
@@ -121,6 +129,8 @@ val require_does_not_raise_async
 val require_does_raise_async
   :  ?cr:CR.t (** default is [CR] *)
   -> ?hide_positions:bool (** default is [false] when [cr=CR], [true] otherwise *)
+  -> ?sanitize:(Sexp.t -> Sexp.t) (** default is Fn.id *)
+  -> ?sexp_style:Sexp_style.t (** default is [Dynamic.get sexp_style] *)
   -> ?show_backtrace:bool (** default is [false] *)
   -> ?here:Stdlib.Lexing.position
   -> (unit -> _ Deferred.t)
@@ -132,7 +142,7 @@ val require_does_raise_async
     immediately on the attached terminal[1]. This is especially useful when debugging
     expect tests that time out.
 
-    [1]: When tests are run by a build system, there may be no controlling terminal, in
+    [1] : When tests are run by a build system, there may be no controlling terminal, in
     which case the output of this log is silently discarded. You would need to run
     [inline_test_runner] interactively to see output from this log. *)
 val tty_log : Log.t Lazy.t
@@ -147,6 +157,7 @@ val remove_connection_details : Sexp.t -> Sexp.t
     before it is emitted. *)
 val with_robust_global_log_output
   :  ?map_output:(string -> string)
+  -> ?sexp_style:Sexp_style.t (** default is [Dynamic.get sexp_style] *)
   -> (unit -> unit Deferred.t)
   -> unit Deferred.t
 
