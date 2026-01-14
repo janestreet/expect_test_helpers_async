@@ -18,6 +18,7 @@ let run
   ?(print_cmdline = false)
   ?(print_stdout = Print_rule.Always)
   ?(print_stderr = Print_rule.Always)
+  ?sexp_style
   ?stdin
   ?working_dir
   prog
@@ -33,11 +34,13 @@ let run
   then (
     let cmdline = prog :: args in
     match stdin with
-    | None -> print_s [%message "run" (cmdline : string list)]
-    | Some stdin -> print_s [%message "run" (cmdline : string list) (stdin : string)]);
+    | None -> print_s ?sexp_style [%message "run" (cmdline : string list)]
+    | Some stdin ->
+      print_s ?sexp_style [%message "run" (cmdline : string list) (stdin : string)]);
   match%bind Process.create ?working_dir ~env ~prog ~args () with
   | Error error ->
     print_s
+      ?sexp_style
       [%message
         "Process creation failed"
           (prog : string)
@@ -63,7 +66,8 @@ let run
     if should_print print_stdout then print_string stdout;
     (match exit_status with
      | Ok () -> ()
-     | Error err -> print_s [%message "Unclean exit" ~_:(err : Unix.Exit_or_signal.error)]);
+     | Error err ->
+       print_s ?sexp_style [%message "Unclean exit" ~_:(err : Unix.Exit_or_signal.error)]);
     if should_print print_stderr && not (String.is_empty stderr)
     then (
       print_endline "--- STDERR ---";
@@ -71,10 +75,11 @@ let run
     return ()
 ;;
 
-let system ?enable_ocaml_backtraces ?hide_positions ?print_cmdline ?stdin cmd =
+let system ?enable_ocaml_backtraces ?hide_positions ?print_cmdline ?sexp_style ?stdin cmd =
   run
     ?enable_ocaml_backtraces
     ?hide_positions
+    ?sexp_style
     ?print_cmdline
     ?stdin
     "/bin/bash"
@@ -142,7 +147,7 @@ let hardlink_or_copy ~orig ~dst =
   | Error e -> raise e
 ;;
 
-let within_temp_dir ?in_dir ?(links = []) f =
+let within_temp_dir ?in_dir ?(links = []) ?sexp_style f =
   let%bind cwd = Unix.getcwd () in
   with_temp_dir ?in_dir (fun temp_dir ->
     let path_var = "PATH" in
@@ -153,7 +158,7 @@ let within_temp_dir ?in_dir ?(links = []) f =
         (Unix.putenv [@ocaml.alert "-unsafe_multidomain"])
           ~key:path_var
           ~data:(String.concat ~sep:":" [ bin; old_path ]);
-        run "mkdir" [ bin ])
+        run ?sexp_style "mkdir" [ bin ])
     in
     let%bind () =
       Deferred.List.iter ~how:`Sequential links ~f:(fun (file, action, link_as) ->
@@ -216,21 +221,27 @@ let show_raise_async
   (type a)
   ?hide_positions
   ?(sanitize = Fn.id)
+  ?sexp_style
   ?show_backtrace
   (f : unit -> a Deferred.t)
   =
   let%map result =
     try_with f ~rest:(fun exn ->
       let exn : Sexp.t = sanitize [%sexp (exn : exn)] in
-      print_s ?hide_positions [%message "Raised after return" ~_:(exn : Sexp.t)])
+      print_s
+        ?hide_positions
+        ?sexp_style
+        [%message "Raised after return" ~_:(exn : Sexp.t)])
   in
-  show_raise ?hide_positions ~sanitize ?show_backtrace (fun () -> Result.ok_exn result)
+  show_raise ?hide_positions ?sexp_style ~sanitize ?show_backtrace (fun () ->
+    Result.ok_exn result)
 ;;
 
 let require_does_not_raise_async
   ?cr
   ?hide_positions
   ?(sanitize = Fn.id)
+  ?sexp_style
   ?show_backtrace
   ~(here : [%call_pos])
   f
@@ -242,16 +253,24 @@ let require_does_not_raise_async
         ~here
         ?cr
         ?hide_positions
+        ?sexp_style
         [%message "Raised after return" ~_:(exn : Sexp.t)])
   in
-  require_does_not_raise ?cr ?hide_positions ~sanitize ?show_backtrace ~here (fun () ->
-    Result.ok_exn result)
+  require_does_not_raise
+    ?cr
+    ?hide_positions
+    ?sexp_style
+    ~sanitize
+    ?show_backtrace
+    ~here
+    (fun () -> Result.ok_exn result)
 ;;
 
 let require_does_raise_async
   ?(cr = CR.CR)
   ?(hide_positions = CR.hide_unstable_output cr)
   ?(sanitize = Fn.id)
+  ?sexp_style
   ?(show_backtrace = false)
   ~(here : [%call_pos])
   f
@@ -269,11 +288,18 @@ let require_does_raise_async
            Just printing out "Raised after return" for now. *)
         print_s
           ~hide_positions
+          ?sexp_style
           [%message
             "Raised after return" ~_:(here : Source_code_position.t) ~_:(exn : exn)])
   in
-  require_does_raise ~cr ~hide_positions ~sanitize ~show_backtrace ~here (fun () ->
-    Result.ok_exn result)
+  require_does_raise
+    ~cr
+    ~hide_positions
+    ~sanitize
+    ?sexp_style
+    ~show_backtrace
+    ~here
+    (fun () -> Result.ok_exn result)
 ;;
 
 let tty_log =
@@ -308,10 +334,10 @@ let remove_connection_details =
     | s -> s)
 ;;
 
-let with_robust_global_log_output ?(map_output = Fn.id) fn =
+let with_robust_global_log_output ?(map_output = Fn.id) ?sexp_style fn =
   let sexp_wrap f s =
     match Sexp.of_string s with
-    | sexp -> sexp |> f |> sexp_to_string
+    | sexp -> sexp |> f |> sexp_to_string ?sexp_style
     | exception _ -> s
   in
   let output_mappers =
@@ -325,7 +351,7 @@ let with_robust_global_log_output ?(map_output = Fn.id) fn =
   Monitor.protect
     ~finally:(fun () -> Log.Global.set_output old_outputs |> return)
     (fun () ->
-      Log.Global.set_output [ Log.For_testing.create_output ~map_output ];
+      Log.Global.set_output [ Log.For_testing.create_output ~map_output () ];
       fn ())
 ;;
 
