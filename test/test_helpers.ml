@@ -458,6 +458,17 @@ let%expect_test "with_robust_global_log_output with ~map_output" =
     return ())
 ;;
 
+let%expect_test "[with_robust_global_log_output] should hide temp files with \
+                 .tmp.[RANDOM], even if they look like spans"
+  =
+  with_robust_global_log_output (fun () ->
+    (* Log a message that matches two patterns: random temp file, and time span. *)
+    Log.Global.error_s [%message "temp file" ~path:"/tmp/.tmp.3200ms/file"];
+    let%bind () = Log.Global.flushed () in
+    [%expect {| ("temp file" (path /tmp/.tmp.SPAN/file)) |}];
+    return ())
+;;
+
 let%expect_test "[remove_backtraces] with no interesting backtrace lines except the \
                  monitor"
   =
